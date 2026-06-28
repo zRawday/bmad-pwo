@@ -1,0 +1,48 @@
+code: pwo
+name: "Parallel Wave Orchestration"
+description: "Orchestrate the parallel implementation of a BMad backlog in isolated waves (git worktrees), keeping the main branch always green and conflict-free."
+module_version: 1.0.0
+default_selected: false
+expands: bmm
+module_greeting: |
+  Parallel Wave Orchestration (PWO) is installed — an expansion of bmm.
+
+  PWO runs AFTER planning (prd -> architecture -> epics -> readiness) and BEFORE the
+  first create-story, through to closeout. The lifecycle is six workflows:
+
+    S0  pwo-probe-harness  - probe what the harness allows  (REQUIRED first step - run it by hand, now)
+    S1  pwo-plan-waves     - applicability gate + adversarial DAG + waves + Phase 0 spec
+    S2  pwo-build-phase0   - build AND prove the Phase-0 guard-rails on main
+    S3  pwo-run-wave       - run one wave end-to-end (once per wave, fresh session)
+    S4  pwo-closeout       - final E2E smokes + de-parallelized consolidation + maturation report
+    S5  pwo-ui-smoke       - on-call screen/journey smoke (called by S3 and S4)
+
+  It REUSES bmm's create-story / dev-story (EMULATED, never invoked), code-review,
+  retrospective, and sprint-status — nothing to reinstall.
+
+  Setup did NOT run the harness probe. Run `pwo-probe-harness` yourself, right after
+  readiness and before planning the waves — the whole mechanism is planned on its result.
+
+  Re-run this setup anytime to reconfigure (or edit _bmad/config.yaml directly).
+
+worktree_workspace:
+  prompt: "Absolute (or {project-root}-relative) path to the sibling directory that will hold the lane worktrees"
+  default: "{project-root}/../<project-name>-wt"
+
+main_branch:
+  prompt: "Name of the main branch the orchestrator keeps green (detected from git)"
+  default: "master"
+
+smoke_harness:
+  prompt: "Which UI smoke harness fits this project's target?"
+  default: "expo-mcp"
+  type: single-select
+  options:
+    - value: "expo-mcp"
+      label: "Expo MCP - React Native / Expo apps on an emulator or device"
+    - value: "chrome-devtools"
+      label: "Chrome DevTools - web apps"
+    - value: "adb"
+      label: "adb - raw Android emulator/device control"
+    - value: "none"
+      label: "None - no UI harness; screen-wave validation will be jest-only (UI blind spot uncovered)"

@@ -1,0 +1,37 @@
+{
+  "name": "bmad-pwo",
+  "owner": {
+    "name": "zRawday"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/zRawday/bmad-pwo",
+  "repository": "https://github.com/zRawday/bmad-pwo",
+  "keywords": [
+    "bmad",
+    "orchestration",
+    "parallel",
+    "workflow",
+    "git-worktree",
+    "waves"
+  ],
+  "plugins": [
+    {
+      "name": "pwo",
+      "source": "./",
+      "description": "Orchestrate the parallel implementation of a BMad backlog in isolated waves (git worktrees), keeping the main branch always green and conflict-free.",
+      "version": "1.0.0",
+      "author": {
+        "name": "zRawday"
+      },
+      "skills": [
+        "./skills/pwo-setup",
+        "./skills/pwo-probe-harness",
+        "./skills/pwo-plan-waves",
+        "./skills/pwo-build-phase0",
+        "./skills/pwo-run-wave",
+        "./skills/pwo-closeout",
+        "./skills/pwo-ui-smoke"
+      ]
+    }
+  ]
+}
