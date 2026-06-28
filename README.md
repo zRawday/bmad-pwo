@@ -1,5 +1,7 @@
 # Parallel Wave Orchestration (PWO)
 
+**Version 1.0.0**
+
 > A BMad module that implements a backlog **in parallel** — many concurrent lanes,
 > one git worktree each — while a single orchestrator keeps the main branch **always
 > green and conflict-free**.
@@ -20,10 +22,10 @@ real **~4–5×** speedup.
 
 | Skill | Role |
 | ----- | ---- |
-| **`pwo-probe-harness`** (S0) | Empirically probe what the harness allows (the method's "Facts") so planning rests on fact, not assumption. **Required first step.** |
+| **`pwo-probe-harness`** (S0) | Empirically probe what the harness allows — the harness Facts (F1-F5) — so planning rests on fact, not assumption. **Required first step.** |
 | **`pwo-plan-waves`** (S1) | Turn epics + architecture into a safe playbook: the **applicability gate** (GO/NO-GO), an adversarially-verified dependency DAG, the wave plan, the Phase 0 spec, and per-lane cards. |
 | **`pwo-build-phase0`** (S2) | Build **and prove** the Phase-0 guard-rails on main before wave 1 (migration-set guard proven RED, hoisted seams, `.gitattributes`, pre-provisioned deps, test-ids split per screen). |
-| **`pwo-run-wave`** (S3) | Execute **one** wave end-to-end keeping main green: emulate create/dev → gate → top-level review → serial integration → critic → smoke → Field Note + handoff. Invoked once per wave, in a fresh session. |
+| **`pwo-run-wave`** (S3) | Execute **one** wave end-to-end keeping main green: emulate create/dev → gate → verify-real-git → top-level review → serial integration → critic → smoke → Field Note + handoff. Invoked once per wave, in a fresh session. |
 | **`pwo-closeout`** (S4) | Close out the backlog: a final E2E smoke campaign by user journey, a **de-parallelized** consolidation wave, and a maturation report that feeds the suite's own improvement. |
 | **`pwo-ui-smoke`** (S5) | On-call leaf: smoke a rendered screen/journey **against its mockup** and return a compact verdict. Delegated by S3 (end-of-screen-wave) and S4 (final E2E). |
 | `pwo-setup` | Module setup: records config, verifies prerequisites, registers the capabilities. |
@@ -55,16 +57,25 @@ enforces this and a NO-GO ("build sequentially") is a valid, useful outcome.
 - **git with worktree support** (the atom of lane isolation; a non-shallow clone is
   recommended).
 - A **dynamic-orchestration / Workflow tool** whose sub-agents have at least
-  `{shell, Read, Write, Edit, Skill, git}`.
+  `{shell, Read, Write, Edit, Skill, git}` (`Skill` is used only by the S0 leak-probe; lanes
+  deliberately emulate and never invoke it).
 - A top-level **`Agent`/code-review** harness (code-review fans out and runs top-level).
 - A **UI smoke harness**, project-dependent: `expo-mcp` | `chrome-devtools` | `adb`
   (or `none`, which leaves the UI blind spot uncovered).
 - The **`bmm`** module — PWO reuses (never reinvents) `create-story` / `dev-story`
   (emulated), `code-review`, `retrospective`, and `sprint-status`.
+- **Python 3.9+** (with `uv` recommended, else `pyyaml` installed) — `pwo-setup`'s config-merge
+  scripts need it.
 
 ## Install
 
-From any git URL, via the BMad installer (discovery mode reads
+**First, install `bmm`** — PWO expands it. If your project doesn't already have it:
+
+```bash
+npx bmad-method install --tools claude-code   # select bmm
+```
+
+Then install PWO from any git URL, via the BMad installer (discovery mode reads
 `.claude-plugin/marketplace.json`):
 
 ```bash
@@ -72,7 +83,8 @@ npx bmad-method install --custom-source https://github.com/zRawday/bmad-pwo --to
 ```
 
 The same `.claude-plugin/marketplace.json` also works with Claude Code's native plugin
-marketplace:
+marketplace (experimental — untested until the repo is published; the `bmad-method install
+--custom-source` route above is the supported one):
 
 ```
 /plugin marketplace add https://github.com/zRawday/bmad-pwo
@@ -91,7 +103,7 @@ Then run setup to record configuration and register the capabilities:
 | -------- | ------- | ------- |
 | `worktree_workspace` | Sibling directory that will hold the lane worktrees | `{project-root}/../<project-name>-wt` |
 | `main_branch` | The branch the orchestrator keeps green | `master` (detected from git) |
-| `smoke_harness` | UI smoke target | `expo-mcp` \| `chrome-devtools` \| `adb` \| `none` |
+| `smoke_harness` | UI smoke target (`expo-mcp` \| `chrome-devtools` \| `adb` \| `none`) | `expo-mcp` |
 
 `pwo-setup` is **additive and non-destructive**: it writes the `pwo` config section and
 appends the help rows; it never deletes another module's config. It verifies git worktree

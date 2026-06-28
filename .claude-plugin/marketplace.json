@@ -23,6 +23,16 @@
       "author": {
         "name": "zRawday"
       },
+      "license": "MIT",
+      "homepage": "https://github.com/zRawday/bmad-pwo",
+      "keywords": [
+        "bmad",
+        "orchestration",
+        "parallel",
+        "workflow",
+        "git-worktree",
+        "waves"
+      ],
       "skills": [
         "./skills/pwo-setup",
         "./skills/pwo-probe-harness",

@@ -37,8 +37,10 @@ root. **This does not apply to the filesystem path _arguments_ passed to the scr
 `{project-root}/` directory under the skill folder. The scripts reject an unresolved token with an
 error.
 
-> **Tooling note.** The commands below call `python3`. If `python3` is not on PATH (common on
-> Windows), use `python` instead — both invoke the same interpreter.
+> **Tooling note.** `merge-config.py` needs **PyYAML**. The cleanest path is `uv run ./scripts/…`
+> — `uv` auto-installs the PEP 723 dependency. Without `uv`, call `python3` (or `python` on Windows —
+> both invoke the same interpreter) and ensure PyYAML is installed (`pip install pyyaml`); a missing
+> PyYAML makes the script exit 2.
 
 ## On Activation
 
@@ -71,6 +73,12 @@ PWO's atom of isolation is the **git worktree**, so confirm it before configurin
 3. **Detect the main branch.** Run `git -C {project-root} rev-parse --abbrev-ref HEAD` (fall back to
    `git symbolic-ref --short refs/remotes/origin/HEAD` if detached). Use the result as the **default
    for `main_branch`** in the next step instead of the literal `master` from `module.yaml`.
+4. **bmm presence (non-blocking).** PWO is an **expansion of `bmm`** and reuses (emulates) its
+   `create-story` / `dev-story`, `code-review`, `retrospective`, and `sprint-status`. Probe for the
+   bmm skills (e.g. `bmad-create-story` / `bmad-dev-story` / `bmad-code-review` under
+   `{project-root}/.claude/skills/`, or the BMad skill registry). If they are absent, **warn** — `bmm
+   not detected — PWO reuses (emulates) its create/dev-story, code-review, retrospective, sprint-status;
+   install bmm before running waves` — and **continue**: record the result, do **not** block setup.
 
 ## Collect Configuration
 
@@ -114,8 +122,11 @@ collection. Replace `{project-root}` in every path argument with the actual proj
 — these are filesystem paths, not config values. Leave `{temp-file}` and `pwo` as-is.
 
 ```bash
-python3 ./scripts/merge-config.py --config-path "{project-root}/_bmad/config.yaml" --user-config-path "{project-root}/_bmad/config.user.yaml" --module-yaml ./assets/module.yaml --answers {temp-file}
-python3 ./scripts/merge-help-csv.py --target "{project-root}/_bmad/module-help.csv" --source ./assets/module-help.csv
+# Recommended: run via `uv run`, which auto-provisions the PEP 723 PyYAML dependency. If `uv` is not
+# available, drop the `uv run` prefix and call `python3` directly (or `python` on Windows) — e.g.
+# `python3 ./scripts/merge-config.py …` — after ensuring PyYAML is installed (`pip install pyyaml`).
+uv run ./scripts/merge-config.py --config-path "{project-root}/_bmad/config.yaml" --user-config-path "{project-root}/_bmad/config.user.yaml" --module-yaml ./assets/module.yaml --answers {temp-file}
+uv run ./scripts/merge-help-csv.py --target "{project-root}/_bmad/module-help.csv" --source ./assets/module-help.csv
 ```
 
 Both scripts output JSON to stdout. If either exits non-zero, surface the error and stop.
@@ -159,10 +170,10 @@ the main repo tree for this; the workspace is a **sibling** of the project.
 
 ## No Legacy Cleanup
 
-There is **no installer package directory to clean** for PWO: its skills live in `{project-root}/skills/`
-and `{project-root}/.claude/skills/`, not in a `_bmad/pwo/` package. Do **not** run a cleanup that
-removes `_bmad/_config/` or other modules' directories — those hold active BMad manifests and config.
-(This is why the bundled `cleanup-legacy.py` is intentionally not invoked by this setup.)
+There is **no installer package directory to clean** for PWO — it has no `_bmad/pwo/` package, so
+nothing under `_bmad/` needs removing. Do **not** run a cleanup that removes `_bmad/_config/` or other
+modules' directories — those hold active BMad manifests and config. PWO therefore bundles **no
+legacy-cleanup script**.
 
 ## Record the Required First Step
 
