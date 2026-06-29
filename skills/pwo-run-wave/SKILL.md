@@ -1,6 +1,6 @@
 ---
 name: pwo-run-wave
-description: Execute ONE parallel wave end-to-end keeping main green — emulate create/dev, gate, top-level review, serial integration, smoke, handoff. Use when the user pastes the previous wave's handoff prompt, says "run the wave", "run wave N", "pwo run wave", or "PWO S3".
+description: "STEP 5 of 6 — repeat once per wave, each in a fresh session. Execute ONE parallel wave end-to-end keeping main green — emulate create/dev, gate, top-level review, serial integration, smoke, handoff. Use when the user pastes the previous wave's handoff prompt, says \"run the wave\", \"run wave N\", \"pwo run wave\", or \"PWO S3\"."
 ---
 
 # pwo-run-wave
@@ -144,6 +144,14 @@ log. Then write the **run-record** + a **self-contained next-wave handoff prompt
 **lanes + their ⚙ constraints**, the pipeline, the must-not-miss practices, "**read the method +
 playbook + memory first**", "**propose the dispatch plan and get the human's GO before WF1**". The
 human starts the next wave in a **new** session by pasting it.
+
+**Command-first, and branch on whether the backlog is done.** The handoff prompt's **first token must be
+the next command** so a paste into a fresh session launches it directly (the template in
+`assets/wave-run-record-template.md` now leads with it): use **`/pwo-run-wave`** when more waves remain,
+or **`/pwo-closeout`** when this was the **last** wave (all lanes integrated, backlog complete) — in
+which case the prompt instead points at the final E2E smokes + de-parallelized consolidation. Emit the
+block in **English**, then tell the user: **"Copy this into a NEW Claude Code session (fresh context) to
+run it."** A **FAIL** smoke routes to triage, not to the handoff.
 
 ## Human intervention
 

@@ -1,6 +1,6 @@
 ---
 name: pwo-closeout
-description: Close out a finished parallel backlog — run the final E2E smoke campaign by user-journey (each via S5), pay down the parallelization debt in a DE-parallelized consolidation wave, and produce the method+skills maturation report. Use when the user says "run closeout", "pwo closeout", "close out the build", "final smokes + consolidation", "PWO S4", or once all waves are integrated.
+description: "STEP 6 of 6 — the final step. Close out a finished parallel backlog — run the final E2E smoke campaign by user-journey (each via S5), pay down the parallelization debt in a DE-parallelized consolidation wave, and produce the method+skills maturation report. Use when the user says \"run closeout\", \"pwo closeout\", \"close out the build\", \"final smokes + consolidation\", \"PWO S4\", or once all waves are integrated."
 ---
 
 # pwo-closeout
@@ -120,6 +120,25 @@ defer), **validating the consolidation** (it touched cross-cutting code — conf
 debt genuinely paid down), and **exploiting the maturation report in the Builder** (the human reinjects
 it, filtered by `fix-target`). Headless → mark each `pending-human` (with the real-git evidence) and
 emit the JSON tail.
+
+## Hand off to the next step (the retro)
+
+Closeout is the **last PWO step**, but the pipeline continues into BMad's reused product/process retro,
+so close the loop the same way every other step does: hand the user a paste-ready prompt for
+**`bmad-retrospective`**, run in a **fresh session**. Once the consolidation is validated and both
+records are written, emit — in **English** — a single fenced code block whose **first token is the next
+command** followed by a self-contained prompt, then tell the user: **"Copy this into a NEW Claude Code
+session (fresh context) to run it."** Resolve every `{token}` to its real value (the final main `{sha}`,
+the two artifact paths, the project name). Skip in headless mode (the JSON tail carries
+`closeoutRecord` + `maturationReport`).
+
+```
+/bmad-retrospective Run the product/process retrospective for {project-name}. The PWO build is closed
+out: main is green @ {sha}, the final E2E smokes passed, the de-parallelized consolidation wave is
+merged, and the maturation report is at {output_folder}/pwo/maturation-report.md (closeout record:
+{output_folder}/pwo/closeout-record.md). Use the wave run-records + Field Notes + maturation report as
+input on what the parallel build delivered and what debt was paid down vs. deferred. Fresh session.
+```
 
 ## Headless output
 

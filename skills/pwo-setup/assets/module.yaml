@@ -7,21 +7,28 @@ expands: bmm
 module_greeting: |
   Parallel Wave Orchestration (PWO) is installed — an expansion of bmm.
 
-  PWO runs AFTER planning (prd -> architecture -> epics -> readiness) and BEFORE the
-  first create-story, through to closeout. The lifecycle is six workflows:
+  PWO is a GUIDED, 6-step pipeline. Run the steps IN ORDER, each in its OWN fresh Claude
+  session: every step ends by printing a paste-ready prompt that launches the next one, so
+  you are never left guessing what to run. It slots in AFTER planning (prd -> architecture ->
+  epics -> readiness) and BEFORE the first create-story, through to closeout.
 
-    S0  pwo-probe-harness  - probe what the harness allows  (REQUIRED first step - run it by hand, now)
-    S1  pwo-plan-waves     - applicability gate + adversarial DAG + waves + Phase 0 spec
-    S2  pwo-build-phase0   - build AND prove the Phase-0 guard-rails on main
-    S3  pwo-run-wave       - run one wave end-to-end (once per wave, fresh session)
-    S4  pwo-closeout       - final E2E smokes + de-parallelized consolidation + maturation report
-    S5  pwo-ui-smoke       - on-call screen/journey smoke (called by S3 and S4)
+    STEP 1  /pwo-setup          - configure the module + verify prerequisites (you are here)
+    STEP 2  /pwo-probe-harness  - probe what the harness allows  (the REQUIRED first run step)
+    STEP 3  /pwo-plan-waves     - applicability gate + adversarial DAG + waves + Phase 0 spec
+    STEP 4  /pwo-build-phase0   - build AND prove the Phase-0 guard-rails on main
+    STEP 5  /pwo-run-wave       - run one wave end-to-end (repeat per wave, each a fresh session)
+    STEP 6  /pwo-closeout       - final E2E smokes + consolidation + maturation report
+            then /bmad-retrospective (the reused product/process retro)
+
+    helper  /pwo-ui-smoke       - on-call screen/journey smoke; auto-invoked by steps 5 & 6.
+                                  You never launch it yourself.
 
   It REUSES bmm's create-story / dev-story (EMULATED, never invoked), code-review,
   retrospective, and sprint-status — nothing to reinstall.
 
-  Setup did NOT run the harness probe. Run `pwo-probe-harness` yourself, right after
-  readiness and before planning the waves — the whole mechanism is planned on its result.
+  NEXT: run `/pwo-probe-harness` now — right after readiness, before planning — the whole
+  mechanism is planned on its result. When it finishes it will hand you STEP 3. (Setup does
+  NOT auto-run it; the probe is human-triggered.)
 
   Re-run this setup anytime to reconfigure (or edit _bmad/config.yaml directly).
 

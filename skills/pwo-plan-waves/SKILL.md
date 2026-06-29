@@ -1,6 +1,6 @@
 ---
 name: pwo-plan-waves
-description: Turn epics + architecture into a safe parallelization playbook (applicability gate, adversarial DAG, waves, Phase 0 spec, per-lane cards). Use when the user says "plan the waves", "plan parallelization", "pwo plan", "PWO S1", or after the harness probe, before the first create-story.
+description: "STEP 3 of 6. Turn epics + architecture into a safe parallelization playbook (applicability gate, adversarial DAG, waves, Phase 0 spec, per-lane cards). Use when the user says \"plan the waves\", \"plan parallelization\", \"pwo plan\", \"PWO S1\", or after the harness probe, before the first create-story."
 ---
 
 # pwo-plan-waves
@@ -166,6 +166,29 @@ wave cut, the critical path, and the Phase 0 spec. **Cross-check every load-bear
 (seeds, barèmes, fiscal constants the cards reference) against the source of truth yourself — do
 not let a card carry an unverified number into a `critical` lane. Record the human's sign-off in
 the playbook. The validated playbook is the hand-off to `pwo-build-phase0` (S2).
+
+## Hand off to the next step
+
+PWO is a **guided pipeline**: each step ends by handing the user a paste-ready prompt for the next one,
+run in a **fresh session**. **Branch on the gate verdict:**
+
+- **NO-GO** (or width collapsed below ~4–5) → emit **no** handoff. The decision *is* the deliverable:
+  the project builds **sequentially**, so tell the user plainly that PWO stops here and to proceed with
+  the normal `create-story` / `dev-story` flow.
+- **GO and the wave plan is signed off** → emit — in **English** — a single fenced code block whose
+  **first token is the next command** followed by a self-contained prompt, then tell the user: **"Copy
+  this into a NEW Claude Code session (fresh context) to run it."** Resolve every `{token}` to its real
+  value (the playbook path, `main_branch`, the project name). Skip in headless mode (the JSON tail
+  carries `recommendation` + `playbook`).
+
+```
+/pwo-build-phase0 The wave plan is validated for {project-name} (applicability gate: GO) — playbook at
+{output_folder}/pwo/playbook.md. Build AND prove the Phase 0 guard-rails on {main_branch} from the
+playbook's "Phase 0 spec (for S2)" section: the migration-set guard (prove it RED by fault injection),
+the hoisted cross-wave seams (with their FK/ordering constraints baked in), the .gitattributes merge
+policy, the pre-provisioned native deps, the per-screen test-ids split, and the worktree workspace +
+state-file ownership policy. Write the receipt to {output_folder}/pwo/phase-0-receipt.md. Fresh session.
+```
 
 ## Headless output
 

@@ -1,6 +1,6 @@
 ---
 name: pwo-ui-smoke
-description: Smoke a rendered screen/journey against its mockup and return a verdict. Use when S3/S4 delegate a UI coherence smoke, or the user says "smoke this screen", "ui coherence smoke", "pwo smoke", or "PWO S5".
+description: "HELPER — not a step you run yourself; auto-invoked by steps 5 & 6 (pwo-run-wave / pwo-closeout). Smoke a rendered screen/journey against its mockup and return a verdict. Use when S3/S4 delegate a UI coherence smoke, or the user says \"smoke this screen\", \"ui coherence smoke\", \"pwo smoke\", or \"PWO S5\"."
 ---
 
 # pwo-ui-smoke
@@ -12,7 +12,9 @@ sub-agent**, not an orchestrator: a thin caller (`pwo-run-wave` S3 at the end of
 screen-wave, `pwo-closeout` S4 for the final E2E smokes) hands you a journey and trusts
 your verdict **without re-driving the app or re-reading your screenshots**. So your one
 deliverable is a compact, reliable **StructuredOutput verdict** — never the transcript,
-never the 40 screenshots. You fan out nothing and build nothing: you observe and report.
+never the 40 screenshots. You fan out nothing and build nothing: you observe and report. And because you are a **leaf**, you emit
+**no** next-step handoff — you return your verdict to your caller (`pwo-run-wave` / `pwo-closeout`),
+which owns the pipeline relay.
 
 **The non-negotiable:** judge **coherence against the mockup**, not merely the absence of
 a crash — a screen that loads but renders the wrong layout, the wrong state, or the wrong

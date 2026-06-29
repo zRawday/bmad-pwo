@@ -90,10 +90,14 @@ FN-{n} · {date} · {project} Wave {id} ({k} lanes: {key — one-liner}, …).
 
 ---
 
-## Next-wave handoff prompt (paste-ready — the human starts the next wave in a NEW session with this)
+## Next-step handoff prompt (paste-ready, command-first — the human continues in a NEW session)
+
+> **First token = the next command**, so pasting the block into a fresh session launches the skill
+> directly. Use the **`/pwo-run-wave`** block when more waves remain; use the **`/pwo-closeout`** block
+> below instead when this was the **LAST** wave (all lanes integrated, backlog complete).
 
 ```
-You are the PWO orchestrator (pwo-run-wave / S3) for {project-name}. Run the NEXT wave —
+/pwo-run-wave You are the PWO orchestrator (pwo-run-wave / S3) for {project-name}. Run the NEXT wave —
 Wave {m} — end-to-end keeping `{main_branch}` green, in THIS fresh session.
 
 START STATE (verified real git):
@@ -123,4 +127,15 @@ bulky, bring back a StructuredOutput); main green > speed > cost (route effort u
 FIRST: read the method (`bmad-parallel-implementation-method.md`) + the playbook
 (`{output_folder}/pwo/playbook.md`) + your memory, THEN propose the dispatch plan and get the
 human's GO before launching WF1.
+```
+
+### …or, if this was the LAST wave (backlog complete) → close out instead of running another wave
+
+```
+/pwo-closeout All waves are integrated on `{main_branch}` @ {final_main_head} for {project-name}
+(green; gate ✓). Close out the backlog: (A) run the final E2E smoke campaign by user journey — each
+delegated to pwo-ui-smoke — and triage what it surfaces; (B) run the DE-parallelized consolidation
+wave (sequential, lightened pipeline) to pay down the parallelization debt; (C) produce the maturation
+report. Inputs: the wave run-records + the parallel-build run log (Field Notes), the whole-app mockups
+(P2), the playbook ({output_folder}/pwo/playbook.md), and deferred-work. Fresh session.
 ```

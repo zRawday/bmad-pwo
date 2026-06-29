@@ -1,6 +1,6 @@
 ---
 name: pwo-build-phase0
-description: Implement and PROVE the Phase-0 guard-rails on the main branch before the first wave (migration-set guard proven RED, seams, .gitattributes, pre-provisioned deps, test-ids split per screen). Use when the user says "build phase 0", "ship the phase-0 infra", "pwo phase 0", "PWO S2", or after the wave plan is validated, before the first wave.
+description: "STEP 4 of 6. Implement and PROVE the Phase-0 guard-rails on the main branch before the first wave (migration-set guard proven RED, seams, .gitattributes, pre-provisioned deps, test-ids split per screen). Use when the user says \"build phase 0\", \"ship the phase-0 infra\", \"pwo phase 0\", \"PWO S2\", or after the wave plan is validated, before the first wave."
 ---
 
 # pwo-build-phase0
@@ -128,6 +128,28 @@ unconvincing, a footprint looked dirty, a gate not actually green — do **not**
 hand-off and do **not** let S3 key off the receipt: return to the failing item, re-prove RED or
 re-gate, and re-present the real-git evidence (the same state the headless `pending-human` /
 `blocked` path holds). Only a validated receipt is the hand-off to `pwo-run-wave` (S3).
+
+## Hand off to the next step
+
+PWO is a **guided pipeline**: each step ends by handing the user a paste-ready prompt for the next one,
+run in a **fresh session**. **Only once the human has validated the receipt** (Phase 0 merged on main,
+green, guard **proven RED**) do you hand off — if validation fails, you do **not** emit a handoff (return
+to the failing item, as above). When validated, emit — in **English** — a single fenced code block whose
+**first token is the next command** followed by a self-contained prompt that names **this wave's lanes +
+their ⚙ anti-collision constraints (verbatim from the playbook's cards)**, then tell the user: **"Copy
+this into a NEW Claude Code session (fresh context) to run it."** Resolve every `{token}` to its real
+value (the final main `{sha}`, the receipt/playbook paths, the project name, the Wave 1 lanes). Skip in
+headless mode (the JSON tail carries `mainHead` + `guardProvenRed` + `receipt`).
+
+```
+/pwo-run-wave Phase 0 is merged and green on {main_branch} @ {sha} for {project-name}, guard proven RED
+(receipt: {output_folder}/pwo/phase-0-receipt.md, overall: ready). Run Wave 1 end-to-end keeping main
+green, in THIS fresh session. This wave's lanes + their ⚙ anti-collision constraints (VERBATIM) are in
+the playbook ({output_folder}/pwo/playbook.md): {list each lane: key (tier) · ⚙ "constraint"}. Pipeline:
+WF1 create (emulate) → GATE → WF2 dev (emulate; dev=xhigh, critical=max) → verify real git → code-review
+TOP-LEVEL (effort max) → serial integration → end-of-wave critic → smoke → Field Note + next-wave
+handoff. Read the playbook + Phase 0 receipt first, propose the dispatch plan, and get my GO before WF1.
+```
 
 ## Headless output
 

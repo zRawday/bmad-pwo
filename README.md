@@ -123,6 +123,12 @@ auto-run it (the probe is human-triggered, right after readiness).
 6. `/pwo-closeout` — final smokes + consolidation + maturation report, then
    `bmad-retrospective`.
 
+> **Guided continuity.** Each step ends by printing a **paste-ready prompt** (command-first) for the
+> next step — copy it into a **fresh** Claude session to continue, which keeps each step's context
+> budget clean. You are never left guessing what to run. `pwo-ui-smoke` is **auto-invoked** by steps
+> 5–6; you never launch it yourself. The chain:
+> `pwo-setup → pwo-probe-harness → pwo-plan-waves → pwo-build-phase0 → pwo-run-wave ×N → pwo-closeout → bmad-retrospective`.
+
 ## Design notes
 
 - **Verify from the source of truth**, never a self-report (real git, real code, the state

@@ -1,6 +1,6 @@
 ---
 name: "pwo-setup"
-description: Sets up the Parallel Wave Orchestration (PWO) module in a project. Use when the user requests to 'install pwo module', 'configure Parallel Wave Orchestration', or 'setup PWO'.
+description: "▶ STEP 1 of 6 — START HERE. Sets up the Parallel Wave Orchestration (PWO) module in a project, then hands you the required first step. Use when the user requests to 'install pwo module', 'configure Parallel Wave Orchestration', or 'setup PWO'."
 ---
 
 # PWO Module Setup
@@ -190,6 +190,26 @@ State whether this was a fresh install or a reconfigure. Summarize the prerequis
 support; shallow warning if any; detected main branch), the smoke-harness probe result, whether the
 worktree workspace was created, and the **required first step** (`pwo-probe-harness`). Then display the
 `module_greeting` from `./assets/module.yaml`.
+
+## Hand off to the next step
+
+PWO is a **guided pipeline**: each step ends by handing the user a paste-ready prompt for the next
+one, run in a **fresh session**, so they are never left guessing what to run. On a **fresh install**
+(skip on a reconfigure), close by emitting — in **English** — a single fenced code block whose **first
+token is the next command** followed by a self-contained prompt, then tell the user: **"Copy this into
+a NEW Claude Code session (fresh context) to run it."** Resolve every `{token}` below to its real value
+(the configured `smoke_harness` / `main_branch` / `output_folder`, the project name). Skip this in
+headless mode — the confirmation already states the required first step.
+
+```
+/pwo-probe-harness Probe the build harness for {project-name} now — this is PWO's REQUIRED first step
+(run it by hand, right after readiness, before planning). Config is written: smoke_harness={smoke_harness},
+main_branch={main_branch}, output_folder={output_folder}. Run every applicable harness Fact (F1–F5)
+twice each as workflow subagents, fold the two copies into one verdict per Fact, and write the
+harness-profile to {output_folder}/pwo/harness-profile.md. Escalate any non-clean Fact to me. Fresh
+session — the skill is self-contained, read nothing else first. When it finishes it will hand you Step 3
+(/pwo-plan-waves).
+```
 
 ## Outcome
 

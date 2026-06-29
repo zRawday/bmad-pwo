@@ -1,6 +1,6 @@
 ---
 name: pwo-probe-harness
-description: Empirically probe what the parallel-build harness allows. Use when the user says "probe the harness", "run the harness probe", "characterize the harness", "pwo probe", or before planning parallel waves (PWO S0).
+description: "STEP 2 of 6 — the REQUIRED first run step (right after setup). Empirically probe what the parallel-build harness allows. Use when the user says \"probe the harness\", \"run the harness probe\", \"characterize the harness\", \"pwo probe\", or before planning parallel waves (PWO S0)."
 ---
 
 # pwo-probe-harness
@@ -116,6 +116,25 @@ non-clean Fact; S1 keys off this verdict.
 - **git with worktree support** is required for F2/F3/F4; F3/F4 run in a throwaway temp repo so
   the project repo is never touched, and F2 captures-then-restores the main repo.
 - **F5 degrades to `applicable:false`** when no dep is supplied or declared — it is skipped, not failed.
+
+## Hand off to the next step
+
+PWO is a **guided pipeline**: each step ends by handing the user a paste-ready prompt for the next one,
+run in a **fresh session**. **Only once the profile is `overall: clean`** (or every non-clean Fact's
+escalation has been resolved) do you hand off — if the probe is still blocked/non-clean, you escalate
+(above) and emit **no** handoff. When clean, emit — in **English** — a single fenced code block whose
+**first token is the next command** followed by a self-contained prompt, then tell the user: **"Copy
+this into a NEW Claude Code session (fresh context) to run it."** Resolve every `{token}` to its real
+value (the profile path, the project name, the input locations you know). Skip in headless mode (the
+JSON tail carries `profile` + `overall`).
+
+```
+/pwo-plan-waves The harness probe is done for {project-name} — harness-profile at
+{output_folder}/pwo/harness-profile.md (overall: clean). Now plan the waves: run the applicability gate
+(P1/P2 → GO/NO-GO), build the adversarially-verified blocked-by DAG, cut the waves, and write the
+Phase 0 spec + per-lane cards to {output_folder}/pwo/playbook.md. Read first: the harness-profile, the
+epics, the architecture/spine, the project context, and the whole-app mockups (P2). Fresh session.
+```
 
 ## Headless output
 
