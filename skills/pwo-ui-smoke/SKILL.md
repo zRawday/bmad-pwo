@@ -37,8 +37,10 @@ inputs and run.
 1. **Config.** Read `{smoke_harness}` — precedence: a value the caller passed you wins;
    else `smoke_harness` from `{project-root}/_bmad/config.yaml` (and `.user.yaml` if
    present); else default `expo-mcp`. Valid values: `expo-mcp | chrome-devtools | adb |
-   none`. If the chosen harness cannot be brought up, degrade to `none` (see *Degrade when
-   there is no UI harness*).
+   none`. Degrade to `none` **ONLY when the configured value is `none`** — a **configured**
+   harness that cannot be reached is `verdict: BLOCKED`, **never a silent degrade**: a
+   jest-green PASS with zero pixels rendered would clear the exact gate this skill exists to
+   hold, and the thin caller trusts the verdict without re-driving.
 2. **Inputs** (the caller supplies these; ask the caller, don't invent):
    - **mockup(s)** — the reference screen(s)/region(s) from P2 (image paths or a mockup
      doc) that the render must match.
@@ -110,19 +112,23 @@ const VERDICT = { type:'object', additionalProperties:false, properties:{
 ```
 
 The verdict rule, applied mechanically: **PASS** iff zero `crashes`, zero `blocking`/`major`
-deltas, and every asserted figure `match:true`. Otherwise **FAIL** (cosmetic-only deltas
-still PASS but are reported). **BLOCKED** iff the harness could not be brought up at all
-(`harness ≠ none`); say why in `notes`. Effort `high` suffices — reliability comes from the
-capture-and-compare protocol above, not from deeper reasoning.
+deltas, every asserted figure `match:true`, **and every screen the journey asserts appears in
+`screensVisited` with a captured frame behind it** (minus the `renderDeferred` ones) — a journey
+you could not finish is a **FAIL** (or **BLOCKED** if the harness died mid-run), never a PASS on
+the screens you did reach. Otherwise **FAIL** (cosmetic-only deltas still PASS but are reported).
+**BLOCKED** iff the harness could not be brought up or reached (`harness ≠ none` — a configured
+harness never degrades to `none`); say why in `notes`. Effort `high` suffices — reliability comes
+from the capture-and-compare protocol above, not from deeper reasoning.
 
 ## Degrade when there is no UI harness
 
-When `{smoke_harness} = none` (or the chosen harness degraded to it), there is no way to
-render pixels. Fall back to the project's **jest / numeric sweep** as the only available
-signal: run it, set `harness:'none'`, `uiBlindSpotCovered:false`, map green→`PASS` /
-red→`FAIL`, and put a prominent `notes` warning that **the UI blind spot is uncovered —
-this verdict proves logic, not render coherence.** A thin orchestrator must see that the
-mockup was never actually compared.
+When `{smoke_harness} = none` — **configured** `none`, the only case that lands here (an
+unreachable configured harness is `BLOCKED`, above) — there is no way to render pixels. Fall
+back to the project's **jest / numeric sweep** as the only available signal: run it, set
+`harness:'none'`, `uiBlindSpotCovered:false`, map green→`PASS` / red→`FAIL`, and put a
+prominent `notes` warning that **the UI blind spot is uncovered — this verdict proves logic,
+not render coherence.** A thin orchestrator must see that the mockup was never actually
+compared (callers treat a screen-gate PASS with `harness:'none'` as BLOCKED).
 
 ## Gotchas (Android / Expo Go — they fire on situations you won't recognize)
 

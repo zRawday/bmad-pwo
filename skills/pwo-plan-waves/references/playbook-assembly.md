@@ -80,6 +80,18 @@ Cut waves so each closes on a **coherent, smokable increment**. Three forces, in
 Do **not** cut to fill idle agents, to go fast, or to maximize reachability for its own sake — cut
 so every boundary leaves the app in a coherent, validatable state.
 
+And two checks every cut must pass before the playbook ships (both deterministic; run them, don't
+eyeball them):
+
+- **Pairwise disjointness.** For every wave, compute the pairwise footprint intersections of its
+  lanes — with **path-prefix semantics** (`src/store/` ∩ `src/store/useX.ts` is non-empty).
+  Every non-empty intersection must be a **declared hotspot carrying a protocol**; else re-scope
+  the cards or re-cut the wave. Footprints are pre-spec *predictions* by different discovery
+  agents: two lanes can innocently claim the same file with neither tagging it a hotspot.
+- **Hotspot editor cap.** Cap the concurrent editors of any one hotspot within a wave at **~2** —
+  unless the file is genuinely flat AND guarded. The module's own evidence says union corruption
+  starts at the **3rd** concurrent appender (FN-2/5/7); spread hotspot-heavy lanes across waves.
+
 ### Wave types and their end-of-wave gate
 
 - **Foundation-wave** — pure engines, nothing on screen. End-of-wave gate = **jest + the empirical
@@ -95,6 +107,13 @@ so every boundary leaves the app in a coherent, validatable state.
   render-deferred to that host wave — let coherence-to-smoke pull the entry and the screen into the
   same wave wherever the DAG allows.
 
+The tag names the wave's *dominant* content; **the gate follows the content, not the tag**. A wave
+containing **any** engine/computation lane carries the **jest + empirical sweep over the merged
+result** (name the swept range — and its runner — in the playbook) **in addition to** the S5 smoke
+criterion when anything renders. Coherence-to-smoke deliberately builds mixed waves; a "screen" tag
+must never silently drop the merged-composition sweep for the engines it pulled in — per-lane
+review sweeps each engine in its own worktree, and only the post-merge sweep sees the composition.
+
 ---
 
 ## Phase 0 spec
@@ -106,12 +125,27 @@ The safety infra S2 (`pwo-build-phase0`) implements and **proves** on the main b
   `DB_VERSION == count == max`, and **no duplicate `CREATE TABLE` / `ADD COLUMN`** across the whole
   set. S2 must **prove it goes RED** by fault injection (blind spot A3: an untested guard does not
   count). Generalize it to any registry a bad merge can silently duplicate.
-- **Seams to hoist** — for every hidden edge dissolved by a stub (from the verification stage): a
-  **typed port + a no-op stub** so the consumer binds early. **For each seam, record the
-  consumer's position/ordering constraint** — especially **FK ordering** (under `foreign_keys=ON`
-  with no cascade, a delete/purge must precede the referenced-row delete). A positionally-wrong
+- **Seams to hoist** — for every edge the verification stage dissolved by a stub — **both** an
+  `edgeReal:true / dissolvableByStub:true` edge **and** a neutralized hidden edge: a **typed port
+  + a no-op stub** so the consumer binds early. **For each seam, record the consumer's
+  position/ordering constraint** — especially **FK ordering** (under `foreign_keys=ON` with no
+  cascade, a delete/purge must precede the referenced-row delete) — **and its semantic contract**
+  (units, rounding/precision, sign, empty/error behavior, from the consumer's spec), plus an
+  **executable contract test committed `skipped` in Phase 0** — un-skipped (skipped→green, i.e. it
+  would have been RED against the no-op) when the producer fills the impl. A positionally-wrong
   seam is *more* dangerous than no seam: it actively misleads the dev, who follows shipped code
   over prose (FN-7/A1). S3's gate re-validates seam position against the actual consumer.
+- **Shared helpers to single-source** — for each computation ≥2 lanes need and no story owns (the
+  duplication clusters from the analysis): the default is to **designate ONE producing story** and
+  edge/wave-order the consumers onto it, every consumer card carrying "import it, never
+  re-implement"; where that ordering would starve the width, list the small **pure** helper here
+  for S2 to implement once on main (a real impl with its unit test — a no-op stub of a *formula*
+  forces every consumer to mock it, which defeats the point).
+- **Shared test fixtures/builders** *(optional)* — when ≥2 lanes will seed the same entities,
+  pre-provision one fixture-builder home on main and reference it from every consumer card — the
+  test-ids move applied to the test layer: N hand-rolled seeders with subtly different assumptions
+  (VAT-inclusive vs VAT-exclusive) each stay green in isolation and contradict each other at the
+  first parity test.
 - **`.gitattributes`** — `merge=union` **only** on genuinely flat registries; **never** on the
   coordination/state file a tool parses (union duplicates keys, breaks the parser), and **never**
   on a structured registry or a contract `.test.ts` (union splices silently — FN-2/5/7).
@@ -161,9 +195,11 @@ Derive the tier from the lane's nature:
 
 - **trivial** — a **pure engine** (pure domain, fully unit-checkable).
 - **standard** — a **compose** lane (wires existing pieces into a screen/flow).
-- **critical** — anything touching **money/barème**, an **FK/cascade**, a **migration**, or a
-  **new native dep**. These are where a silent defect is expensive (a wrong cent, an on-device FK
-  throw, a corrupted schema, an API mismatch).
+- **critical** — anything touching **money/barème**, an **FK/cascade**, a **migration**, a
+  **new native dep**, or **filling a Phase-0 hoisted seam** (its consumers bound waves ago to a
+  contract this lane must now honor exactly). These are where a silent defect is expensive (a
+  wrong cent, an on-device FK throw, a corrupted schema, an API mismatch, a producer/consumer
+  semantic drift).
 
 The tier is **pre-placed**, not the seed of a `tier × task` effort-table — that finer table is
 **deferred and data-driven** (measure `tier + effort + result` in the Field Notes; only build it

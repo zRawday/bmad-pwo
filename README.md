@@ -1,6 +1,6 @@
 # Parallel Wave Orchestration (PWO)
 
-**Version 1.0.0**
+**Version 1.1.0**
 
 > A BMad module that implements a backlog **in parallel** — many concurrent lanes,
 > one git worktree each — while a single orchestrator keeps the main branch **always
@@ -23,9 +23,9 @@ real **~4–5×** speedup.
 | Skill | Role |
 | ----- | ---- |
 | **`pwo-probe-harness`** (S0) | Empirically probe what the harness allows — the harness Facts (F1-F5) — so planning rests on fact, not assumption. **Required first step.** |
-| **`pwo-plan-waves`** (S1) | Turn epics + architecture into a safe playbook: the **applicability gate** (GO/NO-GO), an adversarially-verified dependency DAG, the wave plan, the Phase 0 spec, and per-lane cards. |
-| **`pwo-build-phase0`** (S2) | Build **and prove** the Phase-0 guard-rails on main before wave 1 (migration-set guard proven RED, hoisted seams, `.gitattributes`, pre-provisioned deps, test-ids split per screen). |
-| **`pwo-run-wave`** (S3) | Execute **one** wave end-to-end keeping main green: emulate create/dev → gate → verify-real-git → top-level review → serial integration → critic → smoke → Field Note + handoff. Invoked once per wave, in a fresh session. |
+| **`pwo-plan-waves`** (S1) | Turn epics + architecture into a safe playbook: the **applicability gate** (GO/NO-GO), an adversarially-verified dependency DAG (per-edge refutation + per-story coverage, cycle detection, plan-time duplication clusters), the wave plan (per-wave disjointness check; a mixed wave carries **both** end-of-wave gates), the Phase 0 spec, and per-lane cards. Supports a **scoped mid-build re-plan** when a wave proves the plan wrong. |
+| **`pwo-build-phase0`** (S2) | Build **and prove** the Phase-0 guard-rails on main before wave 1 (migration-set guard proven RED, hoisted seams with semantic contracts + skipped contract tests, single-sourced shared helpers, `.gitattributes` **proven to bind**, pre-provisioned deps, test-ids split per screen). |
+| **`pwo-run-wave`** (S3) | Execute **one** wave end-to-end keeping main green: emulate create/dev (bmm-template specs, survey-main, red→green per AC) → gate → verify-real-git → top-level review → serial integration (+ delta re-review of every manual resolution) → critic (duplication-scout) → smoke (gates by content) → triage if needed → Field Note + handoff. Invoked once per wave, in a fresh session. |
 | **`pwo-closeout`** (S4) | Close out the backlog: a final E2E smoke campaign by user journey, a **de-parallelized** consolidation wave, and a maturation report that feeds the suite's own improvement. |
 | **`pwo-ui-smoke`** (S5) | On-call leaf: smoke a rendered screen/journey **against its mockup** and return a compact verdict. Delegated by S3 (end-of-screen-wave) and S4 (final E2E). |
 | `pwo-setup` | Module setup: records config, verifies prerequisites, registers the capabilities. |

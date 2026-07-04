@@ -73,39 +73,106 @@ Fold the discovery returns deterministically:
 
 - **Build the global symbol map** `produces: symbol → producing story` from every story's
   `producesSymbols`. This is why discovery is a barrier before verification — hidden-edge
-  hunting needs the *whole* map.
+  hunting needs the *whole* map. **A symbol with ≥2 producing stories is a plan-time duplication
+  signal**, never a map entry to last-write-win: designate ONE producer (edge or wave-order the
+  others onto it) or hoist the helper in Phase 0, and record the designation on every consumer's
+  card.
 - **Dedup the edge set**; drop self-edges; collapse duplicate `child←parent` pairs.
+- **Detect cycles** (strongly-connected components) after dedup — a cycle makes the wave cut's
+  hard bound unsatisfiable, and it is **never resolved silently**. For each: prefer dissolving one
+  direction via a hoisted Phase-0 stub (record the seam); else merge the stories into one lane
+  (re-card it — combined footprint, the higher tier; reserve this for hard-hard cycles); else
+  escalate to the human. Record every cycle + its resolution in the playbook's DAG section, and
+  **re-check acyclicity after the verdict fold** (a confirmed missed edge can close a new cycle).
+- **Fold the hotspot lists** — the same file reported by N agents is ONE hotspot; its `protocol`
+  comes from the taxonomy by `kind`; two agents disagreeing on the kind is resolved by inspecting
+  the real file, never by keeping both strings.
 - **Resolve `consumesUnresolved`**: for each, look it up in the global map. If a producer exists
   → it was a **missed edge**, add it. If none exists → it's a **hidden-edge candidate** (the
-  symbol is assumed but nobody on the DAG makes it) → flag for the verification stage and for
-  Phase 0 (a seam to hoist, or a real gap to escalate).
+  symbol is assumed but nobody on the DAG makes it) → flag it for the per-story coverage pass and
+  for Phase 0 (a seam to hoist, or a real gap to escalate).
 
-## Stage 2 — adversarial verification (parallel, one agent per edge)
+One fold is judgement, not plain code, so it is yours (the orchestrator's), right after the
+barrier: **cluster what the stories *compute***, not just what they name. Read every story's
+`producesSymbols` + AC verbs and group the computations ≥2 lanes will need even when the names
+differ ("assemble the frais-réels input", written three ways). Every cluster with no single owner
+is a plan-time duplication signal: designate one producing story (and edge/wave-order the
+consumers onto it), or list the small pure helper in the Phase 0 spec's *Shared helpers* item;
+either way every consumer card carries the single-source constraint ("import it, never
+re-implement"). Deferring the cluster to the end-of-wave critic means N green copies have already
+shipped.
 
-This is the non-negotiable. Each agent is handed one edge (and the graph context) and is
-prompted to **try to refute it** — default-to-skeptical, because a false edge silently wastes
-width. Separately it hunts hidden edges around the same story pair. The schema:
+## Stage 2 — adversarial verification (parallel: one agent per edge, one per story)
+
+This is the non-negotiable, and it runs **two passes together**: a **per-edge refutation** and a
+**per-story coverage** pass. The refuters are skeptical of *edges*, never of *safety* — the error
+costs are asymmetric. A wrongly-kept false edge costs width (recoverable). A wrongly-removed real
+edge schedules the child beside its parent; the child's dev, unable to find the missing symbol,
+re-implements it under footprint — green, silent, merged duplication. So **removal requires
+positive, cited evidence** (the consumed symbol already on the child's base at a named path, or a
+cited spec/AC line proving the child never reads the parent's output); *failure to confirm is not
+refutation*; **when uncertain, KEEP the edge**. Each edge agent is handed one edge (and the graph
+context) and prompted to **try to refute it**. Separately it hunts hidden edges around the same
+story pair. The schema:
 
 ```js
 const VERDICT_SCHEMA = { type:'object', additionalProperties:false, properties:{
   child:{type:'string'}, parent:{type:'string'},
-  edgeReal:{type:'boolean'},                                   // false => false edge, REMOVE it (recovers width)
+  edgeReal:{type:'boolean'},                                   // false => false edge, REMOVE it — ONLY with cited on-base evidence
+  confidence:{type:'string', enum:['certain','probable','uncertain']},  // 'uncertain' => the edge STAYS, whatever edgeReal says
   refutationAttempt:{type:'string'},                           // how you tried to break it; what you found in the real code
   dissolvableByStub:{type:'boolean'},                          // true => the edge can be cut by hoisting a typed no-op stub in Phase 0
-  stubProposal:{type:'string'},                                // the seam to hoist, if dissolvable (port + the consumer's position/ordering constraint)
+  stubProposal:{type:'string'},                                // the seam to hoist, if dissolvable: port + the consumer's position/ordering constraint + the SEMANTIC contract (units, rounding/precision, sign, empty/error behavior — derived from the CONSUMER's spec/ACs)
   hiddenEdges:{type:'array', items:{type:'object', additionalProperties:false, properties:{
     child:{type:'string'}, neededSymbol:{type:'string'}, producerKey:{type:'string'}, evidence:{type:'string'} },
     required:['child','neededSymbol','producerKey','evidence'] }},
   notes:{type:'string'} },
-  required:['child','parent','edgeReal','refutationAttempt','dissolvableByStub','stubProposal','hiddenEdges','notes'] }
+  required:['child','parent','edgeReal','confidence','refutationAttempt','dissolvableByStub','stubProposal','hiddenEdges','notes'] }
 ```
 
 `refutePrompt(e, graph)` instructs the agent to: open the real code at the consumed symbol; try
 to prove the child does **not** actually need the parent merged first (the symbol already exists
-on the base, or the child only needs an interface that can be hoisted); decide `edgeReal`; if
-real but `dissolvableByStub`, propose the seam to hoist **with the consumer's position/ordering
-constraint** (esp. FK ordering — FN-7/A1: a positionally-wrong seam actively misleads); and
-hunt `hiddenEdges` (does the child consume anything whose only producer is in a *later* wave?).
+on the base, or the child only needs an interface that can be hoisted); decide `edgeReal` **with
+`confidence`** — an `edgeReal:false` must cite the on-base symbol (path) or the spec/AC line that
+proves the child never reads the parent's output, and carry the tie-break **verbatim**: *"when
+uncertain, KEEP the edge — a kept false edge costs width; a removed real edge is a silent
+duplication seed"* (note the parent's output usually does **not** exist in the repo yet — absence
+of code is not evidence of a false edge; the map of planned `producesSymbols` is); if real but
+`dissolvableByStub`, propose the seam to hoist **with the consumer's position/ordering
+constraint** (esp. FK ordering — FN-7/A1: a positionally-wrong seam actively misleads) **and its
+semantic contract**; and hunt `hiddenEdges` (does the child consume anything whose only producer
+is another listed story that is not already an ancestor of this child? — waves do not exist yet
+at this stage).
+
+### The per-story coverage pass (the edges nobody proposed)
+
+Refuting only *proposed* edges leaves the worst class unexamined: the edge **nobody proposed**. A
+story that came back with `blockedBy:[]` and an empty `consumesUnresolved` has never been
+challenged — its discovery agent may simply not have *noticed* a consumption, and an unnoticed
+consumption never reaches the barrier's map. So stage 2 also runs **one coverage verifier per
+story** (mandatory at minimum for every zero-edge story and every story the barrier flagged),
+handed the story's spec/ACs **plus the full global `producesSymbols` map**: enumerate everything
+this story will consume (symbols, tables, seams — re-derived from the ACs, not copied from the
+card), check each against the map, and return missed edges keyed by *story coverage*, not by
+proposed-edge adjacency. This pass is the designated consumer of the barrier's
+hidden-edge-candidate flags. The schema:
+
+```js
+const COVERAGE_SCHEMA = { type:'object', additionalProperties:false, properties:{
+  storyKey:{type:'string'},
+  consumesChecked:{type:'array', items:{type:'string'}},       // everything the story will consume, enumerated from the ACs
+  missedEdges:{type:'array', items:{type:'object', additionalProperties:false, properties:{
+    child:{type:'string'}, neededSymbol:{type:'string'}, producerKey:{type:'string'}, evidence:{type:'string'} },
+    required:['child','neededSymbol','producerKey','evidence'] }},
+  notes:{type:'string'} },
+  required:['storyKey','consumesChecked','missedEdges','notes'] }
+```
+
+`coveragePrompt(s, graph)` instructs the agent to: read the story's spec/ACs + the architecture;
+enumerate `consumesChecked` from the ACs (not from the card); look each item up in the global
+`producesSymbols` map; report every consumption whose producer is another listed story that is not
+already this story's ancestor as a `missedEdges` entry (with evidence); and carry the ground-truth
+non-negotiable verbatim.
 
 ## The false-edge / hidden-edge rubric
 
@@ -124,8 +191,12 @@ hunt `hiddenEdges` (does the child consume anything whose only producer is in a 
   Phase 0** (preferred) or by **reordering** so the producer precedes the consumer; if neither is
   possible it's a real backlog gap → escalate to the human.
 
-Fold the verdicts: remove false edges, dissolve stub-able ones (record the seam for Phase 0),
-add confirmed hidden edges (with their neutralization). The result is the final blocked-by DAG.
+Fold the verdicts with a **completeness assertion**: every proposed edge and every story carries
+exactly one verdict — a dead agent's silently-dropped return (`.filter(Boolean)`) is a re-run, not
+a gap. Remove false edges **only where the removal cites on-base evidence and `confidence ≠
+uncertain`**; dissolve stub-able ones (record the seam for Phase 0); add confirmed missed/hidden
+edges (with their neutralization); re-verify the folded graph is **acyclic**. The result is the
+final blocked-by DAG.
 
 ## Hotspot taxonomy (every multi-lane file, tagged + given a protocol)
 
@@ -137,11 +208,11 @@ per-lane cards will carry:
 | `flat-registry` | append-only barrels, a flat `export const` list | `merge=union` safe *only if* truly flat; else split |
 | `structured-registry` | `test-ids.ts` (trailing `type`/aggregate), multi-line `as const` blocks | **split per screen** (lever 1); never union; if unavoidable, hand-resolve + `tsc` backstop |
 | `contract-test` | the registry's `.test.ts` (multi-line `it()` blocks) | **never union**; hand-resolve (partial-block close, then strip markers) |
-| `migration-set` | the migrations file / `DB_VERSION` | one new object at the **pre-allocated** version, ascending; the guard catches dups |
+| `migration-set` | the migrations file / `DB_VERSION` | one new object at the **pre-allocated** version, ascending; the guard catches dups (S1 allocates the concrete numbers on the cards — see SKILL.md § per-lane cards) |
 | `glyph-map` | a shared `Icon.tsx` / Lucide glyph object | keep-both on the import list + the glyph object; manual merge after the first lane |
 | `co-composed-screen` | a screen N lanes add children to | **single-owner shell** + each non-owner adds only its own child slot, preserves the root testID |
 | `shared-store` | a store N lanes extend | classify each hunk (keep-both interface/impl vs keep-HEAD singleton); never blanket-strip |
-| `schema/serialization` | round-trip mappers, `assembleInput` helpers | single source; flag a consolidation story if N lanes re-implement it |
+| `schema/serialization` | round-trip mappers, `assembleInput` helpers | single source; record it in the playbook's **Planned consolidations (for S4)** section if N lanes must re-implement it until all consumers exist |
 
 Always include the **test-id/registry file AND its contract test AND any shared glyph map** in
 the hotspot list — these conflict on essentially every multi-lane integration (method FN-2/4/5/7).

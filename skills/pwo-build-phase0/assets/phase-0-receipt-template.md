@@ -7,7 +7,8 @@ built: {timestamp}
 baseline_main_head: {sha main was at before Phase 0}
 final_main_head: {sha after Phase 0 merged}
 guard_proven_red: {true | false}
-overall: {ready | blocked | pending-human}   # ready only when merged + green + guard proven RED + human signed off
+union_policy_proven: {true | false | n-a}   # n-a only when no .gitattributes policy was needed
+overall: {ready | blocked | pending-human}   # ready only when merged + green + guard proven RED + union policy proven + human signed off
 ---
 
 # Phase 0 Receipt
@@ -29,8 +30,10 @@ overall: {ready | blocked | pending-human}   # ready only when merged + green + 
 | Item | Status | Artifact / files | Commit | Gate |
 | ---- | :----: | ---------------- | ------ | :--: |
 | Migration-set guard | {done / n-a} | {test path} | {sha} | {✓} |
-| Cross-wave seams | {done / n-a} | {port/stub paths} | {sha} | {✓} |
-| `.gitattributes` policy | {done / n-a} | `.gitattributes` | {sha} | {✓} |
+| Cross-wave seams (+ skipped contract tests) | {done / n-a} | {port/stub/test paths} | {sha} | {✓} |
+| Shared helpers single-sourced | {done / n-a} | {helper + unit-test paths} | {sha} | {✓} |
+| Shared test fixtures/builders | {done / n-a} | {fixture-builder path} | {sha} | {✓} |
+| `.gitattributes` policy (+ proven to bind) | {done / n-a} | `.gitattributes` | {sha} | {✓} |
 | Native deps pre-provisioned | {done / n-a} | {package.json + lock} | {sha} | {✓} |
 | Test-ids split per screen | {done / n-a} | `test-ids/*` + barrel | {sha} | {✓} |
 | Worktree workspace + ownership | {done / n-a} | {workspace path} | {sha} | {—} |
@@ -49,11 +52,18 @@ overall: {ready | blocked | pending-human}   # ready only when merged + green + 
   ```
 - **Reverted & green-after:** {migration set restored ✓ · full gate green ✓ · `git status` clean ✓}.
 
-## Seams hoisted (position is the value)
+## Union policy proven (binds where intended, nowhere else)
 
-| Port | Consumer | Position / ordering constraint baked in |
-| ---- | -------- | --------------------------------------- |
-| {name} | {wave/story} | {esp. FK ordering: purge/delete BEFORE the referenced-row delete — and why} |
+- **check-attr positive:** {each union'd path → `merge: union` ✓}.
+- **check-attr negative:** {state file · structured registry · contract `.test.ts` → unset ✓}.
+- **Live merge trial (throwaway worktree, torn down junction-safe):** {union'd file auto-merged
+  both appends, both blocks intact ✓ · structured file did NOT union (conflict raised — correct) ✓}.
+
+## Seams hoisted (position + semantics are the value)
+
+| Port | Consumer | Position / ordering constraint baked in | Semantic contract | Contract test (skipped) |
+| ---- | -------- | --------------------------------------- | ----------------- | ----------------------- |
+| {name} | {wave/story} | {esp. FK ordering: purge/delete BEFORE the referenced-row delete — and why} | {units · rounding · sign · empty/error} | {test path} |
 
 ## Native deps — verified surface
 
@@ -72,5 +82,6 @@ overall: {ready | blocked | pending-human}   # ready only when merged + green + 
 
 ## Human validation (gates the waves)
 
-- **Phase 0 merged on main, green, guard proven RED:** {name / pending} — verified against real git
-  (final HEAD `{final_main_head}`, the gate output, the RED excerpt above), not a summary.
+- **Phase 0 merged on main, green, guard proven RED, union policy proven (or n-a):** {name / pending}
+  — verified against real git (final HEAD `{final_main_head}`, the gate output, the RED excerpt and
+  the check-attr/merge-trial output above), not a summary.

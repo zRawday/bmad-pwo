@@ -69,8 +69,9 @@ Pixel-7-class AVD; coordinates below are device pixels. Use the device id from
 
 ## none
 
-No UI harness is configured (or the chosen one degraded here). There is no way to render
-pixels, so the UI blind spot **cannot** be covered.
+No UI harness is **configured** (this section is never a degrade target — a configured harness
+that cannot be reached is `BLOCKED`, not `none`). There is no way to render pixels, so the UI
+blind spot **cannot** be covered.
 
 - Run the project's **jest suite and/or the numeric sweep** as the only available signal.
 - Build the verdict with `harness:'none'`, `uiBlindSpotCovered:false`, green→`PASS` /

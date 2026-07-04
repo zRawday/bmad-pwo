@@ -51,17 +51,23 @@ run-record and reconcile it against real git, never a remembered state. Talk to 
 1. **Config.** Read `{project-root}/_bmad/config.yaml` (and `.user.yaml` if present), defaults for
    anything missing. Resolve `{project-name}`, `{output_folder}` (else `{project-root}/_bmad-output`),
    `{communication_language}`, `main_branch` (else `git rev-parse --abbrev-ref HEAD`),
-   `smoke_harness`, `worktree_workspace`.
+   `smoke_harness`, `worktree_workspace`, and **`implementation_artifacts`** (bmm's spec/state dir —
+   fallback `_bmad-output/implementation`; the lane specs MUST land there or bmm's own tooling never
+   finds them).
 2. **Inputs & preconditions** (each is a hard stop):
    - **playbook** — `{output_folder}/pwo/playbook.md` (S1): this wave's lane cards (footprint ·
-     hotspots · the ⚙ constraint *verbatim* · tier) and end-of-wave gate (a foundation sweep, or a
-     screen-wave **smoke criterion**: journey + reference mockup(s) + expected live figures).
+     hotspots · the ⚙ constraint *verbatim* · tier) and end-of-wave gate(s) (the merged-result
+     sweep for any engine lane, the **smoke criterion** — journey + reference mockup(s) + expected
+     live figures — when anything renders; a mixed wave carries both).
      Resolve **which wave** from the handoff prompt / the user / `sprint-status`. Absent → **stop & escalate**.
    - **Phase 0 receipt** — `{output_folder}/pwo/phase-0-receipt.md` (S2): require `guard_proven_red:
-     true` and `overall: ready`. Else → **stop & escalate** (the waves key off a *proven* Phase 0).
+     true`, `union_policy_proven: true` (or `n-a`), and `overall: ready`. Else → **stop & escalate**
+     (the waves key off a *proven* Phase 0).
    - **green main** — confirm the gate chain (`typecheck → lint → test`) is green and the tree clean
      from real git **before** you start (you can't prove you kept main green if it began red).
-     Record the baseline HEAD.
+     Record the baseline HEAD — and **cross-check the handoff prompt's claimed `final_main_head`
+     against it**: a mismatch means a stale handoff (or an unrecorded change); reconcile before
+     proceeding, with the precedence **real git > run-records > sprint-status > the pasted prompt**.
 
 ## The pipeline — run it in order, keep the run-record
 
@@ -75,42 +81,65 @@ for the step you run. Record each step into the artifact from `assets/wave-run-r
 ### WF1 create — parallel, EMULATE
 
 One workflow agent per lane: cut a **durable** worktree + branch from the same main snapshot,
-**emulate create-story** to author the spec directly to its absolute worktree path with the card's
-**⚙ constraint baked verbatim**, commit **spec-only**, run the leak-guard. Effort **high**.
+**survey main first** (grep for existing implementations → a "Consumes from main" list; read the
+full body of every UPDATE file in the footprint → a preserved-behaviors Dev Notes block), then
+**emulate create-story** to author the spec — from bmm's installed `create-story` template (wave
+2+: a merged prior spec works as the format reference) — directly to its absolute worktree path
+with the card's **⚙ constraint baked verbatim**, commit **spec-only**, run the **report-only**
+leak-guard (a lane never writes, cleans, or deletes anything in the main repo — it reports and the
+orchestrator triages). Effort **high**.
 
 ### GATE — the fact-extraction pre-pass (you; load-bearing, irreplaceable)
 
-The one step you cannot delegate. **Read the real body of every seam/function the lane consumes —
-not the spec prose.** A forward-seam comment left by an earlier wave encodes *that* wave's
-assumptions, so **re-validate its position against this consumer's new constraints**, above all
-**FK ordering** (purge/child delete *before* the referenced-row delete). Verify the ⚙ constraint
-is baked, the footprint and ACs match, and **cross-check every load-bearing value** (seeds/barèmes)
-against the source of truth. Apply the **anti-mis-tiering guard** (a `critical` lane whose spec
-reads thin goes back). Where the gate settles a **product/fiscal decision with the human**, bake a
-prominent `⚙ ORCHESTRATOR GATE AMENDMENT — OVERRIDES CONFLICTING PROSE BELOW` block at the **top**
-of the in-worktree spec, fix the 1–2 contradicting lines, commit spec-only before WF2.
+The one step you cannot delegate. First **reconcile this wave's cards with merged reality** (the
+playbook froze pre-code: a stale footprint/anchor is amended in the playbook like a gate
+amendment; a wrong/missing edge defers the lane — or escalates to S1's scoped re-plan). Then
+**read the real body of every seam/function the lane consumes — not the spec prose.** A
+forward-seam comment left by an earlier wave encodes *that* wave's assumptions, so **re-validate
+its position against this consumer's new constraints**, above all **FK ordering** (purge/child
+delete *before* the referenced-row delete). Verify the ⚙ constraint is baked, the footprint and
+ACs match, the spec's structure is real (Tasks mapped to ACs), the **"Consumes from main" list
+matches the real exports** (a spec re-specifying an existing helper goes back), the
+**preserved-behaviors block exists for every UPDATE file**, and **cross-check every load-bearing
+value** (seeds/barèmes) against the source of truth. Apply the **anti-mis-tiering guard** (a
+`critical` lane whose spec reads thin goes back). Where the gate settles a **product/fiscal
+decision with the human**, bake a prominent `⚙ ORCHESTRATOR GATE AMENDMENT — OVERRIDES
+CONFLICTING PROSE BELOW` block at the **top** of the in-worktree spec, fix the 1–2 contradicting
+lines, commit spec-only before WF2.
 
 ### WF2 dev — parallel, EMULATE
 
 One agent per lane **reuses** its worktree, junctions `node_modules` (**never install through the
-junction**), **emulates dev-story** directly to absolute worktree paths, gates **in the worktree**,
-commits **footprint-only**, runs the leak-guard. **Route effort upward**: dev = **xhigh**, **`max`
-on a `critical` lane** (the tier comes from S1's card). **Robustness:** bounded retry on a red
-gate; `resumeFromRunId` if a lane dies, to protect the xhigh/max investment.
+junction**), **emulates dev-story** directly to absolute worktree paths — **red→green per AC**
+(write the failing test first; implement nothing unmapped to a spec Task) — gates **in the
+worktree** (never green by weakening an assertion or re-implementing a missing parent symbol:
+that returns red with the reason — the DAG may be wrong, and that is the orchestrator's call),
+commits **footprint-only**, runs the **report-only** leak-guard. **Route effort upward**: dev =
+**xhigh**, **`max` on a `critical` lane** (the tier comes from S1's card). **Robustness:** bounded
+retry on a red gate; `resumeFromRunId` if a lane dies, to protect the xhigh/max investment.
 
 ### Verify with real git (you)
 
 Re-check **every** lane against real git (`worktree list`, `log`, `show --stat`, `diff --stat`,
-main `rev-parse`/`status`), never the self-report: **footprint compliance**, **hotspot discipline**
-(one new migration at its pre-allocated version; append-only registry blocks), **registry-merge
-integrity**, **producer→consumer** sanity (the lane consumes only on-main capabilities).
+main `rev-parse`/`status`), never the self-report: **footprint compliance**, the **spec-commit
+audit** (`show --stat <specCommit>` = the one spec file; no lane commit touches the state file),
+**test reality** (the diff adds real tests — a standard/critical lane adding zero test files goes
+to the reviewer flagged), **actual disjointness** (recompute the pairwise intersection over the
+lanes' real diff file lists — an undeclared shared file stops the integration order), **hotspot
+discipline** (one new migration at its pre-allocated version — verify the *number* against the
+playbook's allocation table; append-only registry blocks), **registry-merge integrity**,
+**producer→consumer** sanity (the lane consumes only on-main capabilities).
 
 ### Code-review — TOP-LEVEL only
 
 Run `bmad-code-review` top-level (Fact 1) at effort **max**, one pass per lane, with the diff range
-+ spec + invariants. **Sweep the realistic input range** for numeric/format code; verify any
-**mandatory side-effecting policy** (throttle/retry/auth) is exercised with its stub **off**; carry
-the **FK blind-spot**. Apply safe patches **in the worktree + re-gate**; a load-bearing patch is **xhigh**.
++ spec (incl. preserved-behaviors) + invariants, and its **write-backs neutralized** (the reviewer
+writes nothing under the main repo; defer-findings return in the StructuredOutput; patches commit
+on the lane branch; no lane integrates with an open finding). **Sweep the realistic input range**
+for numeric/format code; verify any **mandatory side-effecting policy** (throttle/retry/auth) is
+exercised with its stub **off**; carry the **FK blind-spot**; check **coherence** with the
+project's conventions (the fourth lens). Apply safe patches **in the worktree + re-gate**; a
+load-bearing patch is **xhigh**.
 
 ### Serial integration (you; incompressible)
 
@@ -118,32 +147,51 @@ Per lane in **DAG-then-ascending-schema-version** order: sync main → **rebase*
 registry/test-id/glyph hotspot BY HAND** (Phase 0's per-screen split should have killed most; the
 fix is deterministic — keep every lane's block) → **re-gate after EVERY rebase, including a
 "clean" one** (union corrupts `test-ids.ts` *silently*, even when git reports the rebase
-conflict-free; only `tsc` catches it) → `merge --ff-only` → §7 verify → **junction-safe teardown**
-(remove the LINK *before* `worktree remove`; verify the main `node_modules` count unchanged). Then
-your **own** `chore(orchestration)` commits on main: the **state file** (you own it 100%), any
-**lane-declared dependency** install (verify the real export surface), cleanup.
+conflict-free; only `tsc` catches it; a lane filling a hoisted seam also un-skips its contract
+test here) → `merge --ff-only` → §7 verify → **delta re-review** (every by-hand hotspot
+resolution and every orchestrator-authored code commit gets a targeted top-level review at max —
+the merged content must not silently diverge from the reviewed content) → **junction-safe
+teardown** (remove the LINK *before* `worktree remove`; verify the main `node_modules` count
+unchanged). Then your **own** `chore(orchestration)` commits on main: the **state file** (you own
+it 100% — write it in **bmm's status vocabulary only**, per the reference), any **lane-declared
+dependency** install (verify the real export surface), the **deferred-work ledger** fold
+(`{output_folder}/pwo/deferred-work.md`, `DW-` ids), cleanup.
 
 ### End-of-wave critic (you; internal step)
 
-A proactive pass over the merged wave for what isolation hides: **cross-lane duplications**,
-**mocked-away policies**, **forward-seams that moved**. Fix trivial now (delegate any non-trivial
-change to a **fresh agent** — stay thin); flag a cross-cutting one for the closeout consolidation (S4).
+A proactive pass over the merged wave for what isolation hides — detection delegated (the
+**duplication-scout** over the wave's merged diff: new exported symbols clustered against the
+wave's other exports AND pre-existing main; duplicated fixtures; contradictory seeds), verdict
+kept: **cross-lane duplications**, **mocked-away policies**, **forward-seams that moved**,
+**cross-lane idiom divergence**. Fix trivial now (delegate any non-trivial change to a **fresh
+agent** — stay thin); flag a cross-cutting one for the closeout consolidation (S4) as a `DW-`
+ledger entry.
 
 ### End-of-wave smoke
 
-**Screen-wave** → delegate to **`pwo-ui-smoke` (S5)**: pass it exactly the wave's **smoke criterion**
-(journey + reference mockup(s) + expected live figures) and **trust its StructuredOutput verdict**
-(PASS/FAIL/BLOCKED + deltas + figures) **without re-driving the app**. **Foundation-wave** → **jest
-+ the empirical sweep**. Record the verdict; a FAIL routes to triage, not the handoff.
+The gate follows the wave's **content**: **anything renders** → delegate to **`pwo-ui-smoke`
+(S5)**: pass it exactly the wave's **smoke criterion** (journey + reference mockup(s) + expected
+live figures) and **trust its StructuredOutput verdict** (PASS/FAIL/BLOCKED + deltas + figures)
+**without re-driving the app** — but **validate its envelope** (PASS counts only with
+`harness ≠ none`, `uiBlindSpotCovered:true`, evidence present, every asserted screen visited; else
+treat as BLOCKED). **Any engine lane** → **jest + the empirical sweep of the merged result**,
+executed by a delegated agent with captured output — never narrated. A mixed wave runs **both**.
+Record the verdict; a FAIL/BLOCKED routes to **Smoke triage** (`references/wave-pipeline.md`
+§ *Smoke triage*), not the handoff.
 
 ### Field Note + handoff (you; the relay)
 
-If the wave taught something new, append a **dated Field Note** to the project's parallel-build run
-log. Then write the **run-record** + a **self-contained next-wave handoff prompt** from
-`assets/wave-run-record-template.md`: the current **main SHA + green state**, the next wave's
-**lanes + their ⚙ constraints**, the pipeline, the must-not-miss practices, "**read the method +
-playbook + memory first**", "**propose the dispatch plan and get the human's GO before WF1**". The
-human starts the next wave in a **new** session by pasting it.
+If the wave taught something new, append a **dated Field Note** to the parallel-build run log at
+**`{output_folder}/pwo/run-log.md`** (create it at wave 1 — S4 names this log its primary evidence
+base; a Field Note in any other location is a Field Note S4 loses). Distill the **≤10-line
+patterns digest** for the next wave's WF1/WF2 prompts (established idioms / mistakes not to
+repeat; card constraints and amendments override it). Then write the **run-record** + a
+**self-contained next-wave handoff prompt** from `assets/wave-run-record-template.md`: the current
+**main SHA + green state**, the next wave's **lanes + their ⚙ constraints**, the pipeline, the
+must-not-miss practices, the patterns digest, any **accepted debt** (`DW-` ids), "**read the
+playbook + Phase 0 receipt + the previous run-record + the run log first**", "**propose the
+dispatch plan and get the human's GO before WF1**". The human starts the next wave in a **new**
+session by pasting it.
 
 **Command-first, and branch on whether the backlog is done.** The handoff prompt's **first token must be
 the next command** so a paste into a fresh session launches it directly (the template in
@@ -165,5 +213,5 @@ When invoked headless, run the full pipeline, write the run-record, mark the hum
 `pending-human`, and return JSON only —
 `{ "status": "complete" | "blocked", "wave": "<id>", "mainHead": "<sha>", "lanesIntegrated": ["<key>", …], "gatesGreen": true | false, "smokeVerdict": "PASS" | "FAIL" | "BLOCKED" | "jest-only", "fieldNoteAppended": true | false, "runRecord": "<path>", "handoffPrompt": "<path>", "pendingHuman": ["gate", "integration-validation", "smoke-verdict", "handoff"] }`
 (`"blocked"` with a one-line `reason` if the playbook or this wave's cards are absent, if the Phase 0
-receipt is not `guard_proven_red: true` / `overall: ready`, or if main was red before you started —
-those preconditions are never waived).
+receipt is not `guard_proven_red: true` / `union_policy_proven: true|n-a` / `overall: ready`, or if
+main was red before you started — those preconditions are never waived).

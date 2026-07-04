@@ -61,18 +61,24 @@ resume an interrupted closeout, re-read them and reconcile against real git, nev
    `worktree_workspace`.
 2. **Inputs & preconditions** (each is a hard stop unless noted):
    - **all waves integrated** — confirm from `sprint-status` (the state file the orchestrator owns)
-     that the backlog is complete, and confirm the gate chain (`typecheck → lint → test`) is **green
+     that the backlog is complete — **every story key AND every `epic-X` key `done`, in bmm's
+     vocabulary** (a nonstandard value like `merged` means a wave session drifted; fix the state
+     file before proceeding) — and confirm the gate chain (`typecheck → lint → test`) is **green
      and the tree clean** from real git. Record the baseline HEAD. Closeout never runs on an
      unfinished or red backlog. Absent / red → **stop & escalate**.
    - **the wave run-records** — the accumulated `wave-run-record` outputs from S3 (each wave's
-     verified outcome + its end-of-wave critic flags) and the project's **parallel-build run log**
-     (the dated **Field Notes**, FN-1…FN-N). These are the raw material for the maturation report and
-     the source of the *planned* + *flagged* debt. Absent → the report degrades to what you can verify
-     from git + `deferred-work`; **note the gap**, don't stop.
+     verified outcome + its end-of-wave critic flags + its accepted smoke-triage debt) and the
+     **parallel-build run log** at `{output_folder}/pwo/run-log.md` (the dated **Field Notes**,
+     FN-1…FN-N). These are the raw material for the maturation report and the source of the
+     *planned* + *flagged* debt. Absent → the report degrades to what you can verify from git +
+     the ledger; **note the gap**, don't stop.
    - **the smoke material** — the **whole-app mockups (P2)** and the **playbook** (S1) journeys /
      expected figures, to build the E2E campaign's smoke criteria. Absent → **stop & escalate** (a
      smoke with no mockup is a no-crash check, not the validation gate).
-   - **`deferred-work`** — the parked items each wave's review filed (the consolidation's work-list seed).
+   - **the deferred-work ledger** — `{output_folder}/pwo/deferred-work.md` (append-only, `DW-` ids;
+     S3's reviews and critics file into it at each integration). **Absent → reconcile against every
+     run-record's "Flagged for S4" table**: if those are also empty, record "no parked debt"
+     explicitly and continue — never treat silence as either a hard stop or a free pass.
 
 ## The closeout — run A → B → C in order, keep the two records
 

@@ -94,13 +94,15 @@ correction. Concretely:
 
 ## Hoist cross-wave seams
 
-For each hidden edge the plan dissolves with a stub (the playbook lists them with their consumer):
-declare the **interface now** — a **typed port + a no-op stub** — so the Wave-N consumer binds to a
+For each edge the plan dissolves with a stub — **a dissolvable real edge or a neutralized hidden
+edge; the playbook's seam list carries both**, one-to-one with the edges the DAG dropped — declare
+the **interface now** — a **typed port + a no-op stub** — so the Wave-N consumer binds to a
 contract on main and the producer fills the impl in a later wave. The critical path does not deepen,
-and no lane invents its own divergent copy.
+and no lane invents its own divergent copy (a dissolved edge whose seam never ships forces exactly
+that: the consumer's dev, finding no port on main, declares a local divergent one to go green).
 
-The load-bearing part is **position/ordering**, not the type. Bake the consumer's constraint into the
-seam itself:
+The load-bearing parts are **position/ordering** and the **semantic contract**, not just the type.
+Bake the consumer's constraint into the seam itself:
 
 - **FK ordering (the one that bit — FN-7 / A1).** Under `foreign_keys=ON` with no `ON DELETE
   CASCADE`, a delete/purge of a referencing row MUST run **before** the referenced-row delete. If the
@@ -111,6 +113,12 @@ seam itself:
 - **Anchor to the real consumer.** Read the actual consuming code (or its spec) and place the seam
   where that code will call it — do not infer the position from the seam's name. Leave a one-line
   comment: the ordering rule, and "S3's gate re-validates this seam against the real consumer."
+- **Bake the semantic contract** (from the playbook's seam entry: units, rounding/precision, sign,
+  empty/error behavior) into the port's doc comment, and commit the seam's **contract test,
+  `skipped`** — it encodes the consumer's expectations against the real impl and is un-skipped by
+  S3 at integration when the producer lane lands (it must go skipped→green, i.e. it would have
+  been RED against the no-op). Consumers mock the port in their own tests; without this test,
+  producer/consumer semantic drift across waves has no owner — centimes-vs-euros ships green.
 
 Gate the seam (it must typecheck as a no-op) and commit it footprint-clear.
 
@@ -133,6 +141,21 @@ one**. Set it precisely:
 
 The split (next section) is what *lets* you union safely — without it, union on the monolithic
 `test-ids.ts` is exactly the corruption class lever 1 exists to kill.
+
+**Prove the policy binds — the same A3 rule as the guard (a written policy is not a bound one):**
+
+1. **`git check-attr merge <path>`** on **every** intended union file (each must print `union`) AND
+   negative checks on the coordination/state file plus at least one structured registry / contract
+   `.test.ts` (each must print *no* union). A pattern that silently no-ops (wrong path prefix —
+   `test-ids/*.ts` when the files live at `src/test-ids/`) surfaces on every wave as raw 3-way
+   conflicts on the hottest files; one that over-matches splices a structured file silently — and
+   on a non-TS registry (JSON locale map, YAML route table) there is **no `tsc` backstop** to catch
+   the splice at integration.
+2. **One live merge trial**, once, in a throwaway worktree (junction-safe teardown, as the RED
+   proof): two branches appending to a union'd file must auto-merge with both blocks intact; the
+   same trial on a structured file must **not** union (a real conflict is the correct outcome).
+3. **Record both checks** in the receipt's *Union policy proven* block and set
+   `union_policy_proven: true` in its frontmatter — S3 keys off it like `guard_proven_red`.
 
 ---
 
@@ -175,6 +198,26 @@ screen plus a barrel:
 
 List the per-screen split the spec implies in the receipt — it is the durable record of which screen
 owns which file when the lanes start appending.
+
+---
+
+## Single-source shared helpers (from the plan's duplication clusters)
+
+For each computation the playbook lists under *Shared helpers to single-source* with a Phase-0
+home: implement the small **pure** helper once on main — a **real impl with its unit test**, not a
+no-op stub (a stub of a *formula* forces every consumer to mock it, which recreates the divergence
+it exists to prevent) — so every consumer card's "import it, never re-implement" constraint has a
+real target on main before any lane starts. Where the playbook instead designated a producing
+story, build **nothing** here — the constraint rides the cards and the wave order. Gate and commit
+footprint-clear.
+
+## Shared test fixtures/builders (optional — the test-ids move, applied to the test layer)
+
+When the playbook lists entities ≥2 lanes will seed: pre-provision **one fixture-builder home** on
+main, referenced by every consumer card. N hand-rolled seeders with subtly different assumptions
+(VAT-inclusive vs VAT-exclusive amounts) each stay green against their own fixture and contradict
+each other at the first parity test — at which point the failure cannot be attributed (helper
+divergence vs fixture divergence) without archaeology.
 
 ---
 

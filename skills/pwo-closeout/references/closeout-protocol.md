@@ -61,7 +61,10 @@ contract and returns a compact StructuredOutput verdict; you consume it. The fie
 schema — consume it, don't re-declare it):
 
 - `verdict` — `PASS | FAIL | BLOCKED` (PASS iff zero crashes, zero `blocking`/`major` deltas, every
-  figure `match:true`).
+  figure `match:true`). **Validate the envelope before accepting a PASS**: it counts only with
+  `harness ≠ none`, `uiBlindSpotCovered:true`, non-empty `evidencePaths`, and every asserted screen
+  present in `screensVisited` — anything else is treated as **BLOCKED** (a jest-only degrade must
+  never clear the project validation gate).
 - `deltas[]` — each `{ screen, expected, observed, severity }`, severity `cosmetic | major | blocking`.
 - `figures[]` — each `{ label, expected, observed, match }`; a figure S5 couldn't locate on a real
   frame is `match:false`, not an optimistic guess.
@@ -100,16 +103,29 @@ to *consolidate* cleanly.
 
 ### 1. Assemble the work list (two debts + the §A spillover)
 
-Pull from the wave run-records (S3's end-of-wave critic flags), the Field Notes, `deferred-work`, and
-the triage spillover from §A:
+Pull from the wave run-records (S3's end-of-wave critic flags + accepted smoke-triage debt), the
+Field Notes (`{output_folder}/pwo/run-log.md`), the **deferred-work ledger**
+(`{output_folder}/pwo/deferred-work.md`), the **playbook's `Planned consolidations (for S4)`
+section** (S1's structurally-deferred single-source decisions — the debt that was *planned*, and
+is forgotten by construction if you don't read it back), and the triage spillover from §A.
+Assemble **mechanically**: enumerate every run-record's "Flagged for S4" table + the ledger's
+`DW-` ids + the playbook section, and reconcile the counts — an item in a run-record with no
+ledger entry (or vice versa) is a bookkeeping gap to resolve *before* the consolidation starts.
+Then run **one independent whole-repo duplication sweep** (the S3 duplication-scout recipe, scoped
+to the whole build's range `first-baseline..HEAD`) so the work list does not depend solely on
+per-wave critic flags — a duplication every single critic missed is still payable now.
 
 - **(1) Incurred debt — what isolation *created*** (subi):
-  - **Cross-lane duplications.** N lanes that independently re-implemented one formula/predicate
-    because no shared home existed yet (the critic flagged these and may have left a *temporary*
-    on-master cross-check proving they agree). The fix: **extract one shared neutral helper** + add a
-    **permanent parity test** asserting the consumers agree, then delete the duplicates. *(The
-    canonical example: a cross-store `assembleFraisReelsInput` that two/three stores each assembled
-    independently — prove byte-parity, then single-source it.)*
+  - **Cross-lane duplications.** N lanes that independently re-implemented one
+    formula/predicate/**fixture-builder** because no shared home existed yet (the critic flagged
+    these and may have left a *temporary* on-master cross-check proving they agree). The fix:
+    **extract one shared neutral helper** + add a **permanent parity test** asserting the consumers
+    agree, then delete the duplicates. *(The canonical example: a cross-store
+    `assembleFraisReelsInput` that two/three stores each assembled independently — prove
+    byte-parity, then single-source it.)*
+  - **Cross-lane idiom divergence** the critics recorded (the canonical idiom is named in the
+    `DW-` entry): converge the outliers onto it — dialect adapters between lanes' modules are dead
+    seams, not architecture.
   - **Seams / policies / FK blind-spots to revisit holistically.** A forward-seam that moved; a
     mandatory policy a wave mocked away; a non-cascading-FK delete path that only the on-device smoke
     (or §A) could expose. These need a *whole-picture* fix, not a per-lane patch.
@@ -128,10 +144,13 @@ One item at a time (or very low width on genuinely disjoint items — but defaul
    test", "report a StructuredOutput"). Keep the orchestrator thin — you don't type the refactor. The
    dev works on `MAIN` directly or on a short-lived branch you ff-merge; there is **no worktree fan-out**.
 2. **Adversarial review — top-level** (reuse `bmad-code-review`, effort `max`; it fans out, so it runs
-   top-level, never nested — same Fact-1 constraint as S3). Same lenses: sweep don't spot-check; "is
-   the policy tested, or mocked away?"; prove FK/delete order, not just zero-orphan. The review of a
-   *consolidation* especially asks: **did unifying the duplicates change any consumer's result?** The
-   parity test is the proof it didn't.
+   top-level, never nested — same Fact-1 constraint as S3; same write-back neutralization: findings
+   return in the StructuredOutput, nothing written outside the item's footprint). Same lenses: sweep
+   don't spot-check; "is the policy tested, or mocked away?"; prove FK/delete order, not just
+   zero-orphan. The review of a *consolidation* especially asks: **did unifying the duplicates change
+   any consumer's result?** The parity test is the proof it didn't — and **a parity-test failure must
+   be attributed (helper divergence vs fixture divergence) before any assertion changes; never weaken
+   an assertion to go green.**
 3. **Re-gate** (`typecheck → lint → test`) and verify the diff against **real git** (footprint is the
    consolidation's files; the test count grew additively — no loss). Commit small on `MAIN`
    (`refactor(consolidation): …` / `fix: …`). Then take the next item.

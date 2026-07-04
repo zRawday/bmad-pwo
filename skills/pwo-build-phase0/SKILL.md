@@ -83,13 +83,23 @@ with their load-bearing edge (recipes in `references/phase0-build.md`):
   (strictly-increasing/unique/contiguous versions, `DB_VERSION == count == max`, no duplicate
   `CREATE TABLE`/`ADD COLUMN`); generalize the shape to any registry the spec flags. Proving it
   RED is its own beat below — the load-bearing, easy-to-fake step.
-- **Hoist cross-wave seams.** A typed port + no-op stub per dissolved hidden edge, with the
+- **Hoist cross-wave seams.** A typed port + no-op stub per dissolved edge — **dissolvable real
+  edges and neutralized hidden edges alike** (the playbook lists both, one-to-one) — with the
   consumer's **position/ordering constraint baked in** — above all **FK ordering**: a
   positionally-wrong seam is *worse* than none, because the dev follows shipped code over prose
-  (FN-7/A1). Anchor it to the real consumer and verify its position against the actual delete-path.
-- **`.gitattributes` merge policy.** `merge=union` **only** on genuinely flat registries (the
-  split test-id files qualify); **never** on the coordination/state file or a structured registry
-  / contract `.test.ts` — union splices those silently.
+  (FN-7/A1). Anchor it to the real consumer, verify its position against the actual delete-path,
+  and commit its **contract test, skipped** (units/rounding/sign/empty-error — S3 un-skips it when
+  the producer lands; drift across waves otherwise has no owner).
+- **Single-source the shared helpers** the playbook lists (real pure impls + unit tests, not
+  stubs), and **pre-provision the shared test fixtures/builders** if listed — the plan's
+  duplication clusters, killed at the source (recipes in the reference).
+- **`.gitattributes` merge policy — written AND proven to bind.** `merge=union` **only** on
+  genuinely flat registries (the split test-id files qualify); **never** on the coordination/state
+  file or a structured registry / contract `.test.ts` — union splices those silently. Then prove
+  it: `git check-attr` on every union'd path and negatively on the state file + one structured
+  file, plus one live concurrent-append merge trial (recipe in the reference) — a policy whose
+  pattern silently no-ops or over-matches is a corruption class with no `tsc` backstop on non-TS
+  registries. Record `union_policy_proven` in the receipt; S3 keys off it.
 - **Pre-provision native deps.** Install every native dep the backlog needs once on main (sparing
   the per-lane shim dance, C3) — but **verify the full peer/transitive set and the real installed
   export surface first** (FN-4/FN-1 both bit at integration); bind to the actual API, not the
@@ -121,8 +131,9 @@ Write the artifact from `assets/phase-0-receipt-template.md` to the resolved rec
 baseline + final main HEAD, a per-item table (done / n-a · artifact path · commit · gate result),
 the **captured RED proof** block, the deps' verified export-surface notes, the test-id split list,
 and the ownership policy. Then **bring it to the human for the one validation that gates the waves**
-(AskUserQuestion): *is Phase 0 merged on main, green, and the guard proven RED?* Show the real-git
-evidence (the HEAD, the gate output, the RED excerpt), not a summary you are asking them to trust.
+(AskUserQuestion): *is Phase 0 merged on main, green, the guard proven RED, and the union policy
+proven to bind (or n-a)?* Show the real-git evidence (the HEAD, the gate output, the RED excerpt,
+the check-attr/merge-trial output), not a summary you are asking them to trust.
 Record the sign-off in the receipt. **If the human does not validate** — the RED proof
 unconvincing, a footprint looked dirty, a gate not actually green — do **not** write the validated
 hand-off and do **not** let S3 key off the receipt: return to the failing item, re-prove RED or
@@ -133,17 +144,17 @@ re-gate, and re-present the real-git evidence (the same state the headless `pend
 
 PWO is a **guided pipeline**: each step ends by handing the user a paste-ready prompt for the next one,
 run in a **fresh session**. **Only once the human has validated the receipt** (Phase 0 merged on main,
-green, guard **proven RED**) do you hand off — if validation fails, you do **not** emit a handoff (return
+green, guard **proven RED**, union policy **proven to bind** or `n-a`) do you hand off — if validation fails, you do **not** emit a handoff (return
 to the failing item, as above). When validated, emit — in **English** — a single fenced code block whose
 **first token is the next command** followed by a self-contained prompt that names **this wave's lanes +
 their ⚙ anti-collision constraints (verbatim from the playbook's cards)**, then tell the user: **"Copy
 this into a NEW Claude Code session (fresh context) to run it."** Resolve every `{token}` to its real
 value (the final main `{sha}`, the receipt/playbook paths, the project name, the Wave 1 lanes). Skip in
-headless mode (the JSON tail carries `mainHead` + `guardProvenRed` + `receipt`).
+headless mode (the JSON tail carries `mainHead` + `guardProvenRed` + `unionPolicyProven` + `receipt`).
 
 ```
-/pwo-run-wave Phase 0 is merged and green on {main_branch} @ {sha} for {project-name}, guard proven RED
-(receipt: {output_folder}/pwo/phase-0-receipt.md, overall: ready). Run Wave 1 end-to-end keeping main
+/pwo-run-wave Phase 0 is merged and green on {main_branch} @ {sha} for {project-name}, guard proven RED,
+union policy {proven to bind | n-a} (receipt: {output_folder}/pwo/phase-0-receipt.md, overall: ready). Run Wave 1 end-to-end keeping main
 green, in THIS fresh session. This wave's lanes + their ⚙ anti-collision constraints (VERBATIM) are in
 the playbook ({output_folder}/pwo/playbook.md): {list each lane: key (tier) · ⚙ "constraint"}. Pipeline:
 WF1 create (emulate) → GATE → WF2 dev (emulate; dev=xhigh, critical=max) → verify real git → code-review
@@ -155,6 +166,6 @@ handoff. Read the playbook + Phase 0 receipt first, propose the dispatch plan, a
 
 When invoked headless, skip the interactive validation: still build every item, write the receipt,
 mark the human sign-off `pending-human` (with the real-git evidence attached), and return JSON only —
-`{ "status": "complete" | "blocked", "mainHead": "<sha>", "guardProvenRed": true | false, "itemsDone": ["migration-guard", "test-ids-split", …], "itemsSkipped": ["…"], "receipt": "<path>", "pendingHuman": ["phase-0-validation"] }`
+`{ "status": "complete" | "blocked", "mainHead": "<sha>", "guardProvenRed": true | false, "unionPolicyProven": true | false | "n-a", "itemsDone": ["migration-guard", "test-ids-split", …], "itemsSkipped": ["…"], "receipt": "<path>", "pendingHuman": ["phase-0-validation"] }`
 (`"blocked"` with a one-line `reason` if the playbook's Phase 0 spec is absent, if main was red
 before you started, or if the guard could not be made to go RED — that proof is never waived).
