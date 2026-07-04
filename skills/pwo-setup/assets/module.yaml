@@ -1,7 +1,7 @@
 code: pwo
 name: "Parallel Wave Orchestration"
 description: "Orchestrate the parallel implementation of a BMad backlog in isolated waves (git worktrees), keeping the main branch always green and conflict-free."
-module_version: 1.1.0
+module_version: 1.2.0
 default_selected: false
 expands: bmm
 module_greeting: |

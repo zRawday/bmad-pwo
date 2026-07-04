@@ -1,6 +1,6 @@
 # Parallel Wave Orchestration (PWO)
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 > A BMad module that implements a backlog **in parallel** — many concurrent lanes,
 > one git worktree each — while a single orchestrator keeps the main branch **always
@@ -135,6 +135,11 @@ auto-run it (the probe is human-triggered, right after readiness).
   file).
 - **The orchestrator coordinates, it does not implement** — it delegates everything bulky
   and keeps only the targeted, load-bearing judgement (the gate).
+- **The orchestrator routes model AND effort per delegation** — sub-agents never inherit the
+  session's model: coding/judging delegations run the strongest coding tier (Opus-class,
+  xhigh/max), observation/protocol delegations run a mid tier (Sonnet-class, high). The top-tier
+  session model is reserved for the orchestrator's own judgement and runs a sub-agent **only on
+  explicit user request**.
 - **A single writer to the state file** — the orchestrator owns `sprint-status` 100%;
   lanes never touch it.
 - **Emulate create/dev** — never invoke the real Skill (it would leak to the main repo).

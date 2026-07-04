@@ -1,6 +1,6 @@
 # Wave Pipeline — the orchestrator's recipe for one wave
 
-The per-step recipe SKILL.md routes here for: the **effort table**, the **WF1/WF2 script
+The per-step recipe SKILL.md routes here for: the **model × effort table**, the **WF1/WF2 script
 skeletons + StructuredOutput schemas** (with the emulate / leak-guard / footprint-only parade),
 the **gate fact-extraction recipe**, the **§7 real-git verification checklist**, the **serial
 integration + junction-safe teardown** order, the **end-of-wave critic** checklist, the **S5
@@ -23,22 +23,30 @@ conflict.**
 
 ---
 
-## The effort table (read while constructing every `agent()` call)
+## The model × effort table (read while constructing every `agent()` call)
 
-Route effort **upward** — the cap goes on whatever *judges* or *codes at stakes*; drop back only on
-the purely procedural. **Token economy is not a goal** (main green > speed > cost).
+The orchestrator chooses **both the model and the effort of every delegation** — sub-agents never
+inherit the session's model by default. The routing rule: **the session's top-tier model (the one
+running YOU) is reserved for the orchestrator's own load-bearing judgement** — the GATE, the fold,
+the hand-resolutions; delegated work runs on the strongest *coding* tier (`model:'opus'`) and
+routes **down** (`model:'sonnet'`) where the step is observation/protocol rather than reasoning —
+never up. A sub-agent runs the top tier **only on explicit user request** (record it in the
+run-record). If a named tier is unavailable in the harness, fall back to the nearest tier **at or
+below** it — never silently upgrade. Within the routed tier, route effort **upward** — the cap
+goes on whatever *judges* or *codes at stakes*; drop back only on the purely procedural (main
+green > speed > cost).
 
-| Task | Effort | Why |
-| ---- | :----: | --- |
-| create (emulate) | **high** | the gate catches content, but a poor spec burns the gate's scarce budget |
-| dev (emulate) | **xhigh** | single pass, no retry net → max capability first try; **`max` on a `critical` lane** (tiering upward is the only safe direction) |
-| code-review | **max** | the last adversarial net; it fights the dev's confirmation bias |
-| patch (load-bearing) | **xhigh** | subtle coding (rounding, FK, boundary) |
-| smoke / mechanical | **high** | bounded by observation fidelity + ops robustness, not reasoning depth — don't overthink the procedural |
+| Task | Model | Effort | Why |
+| ---- | :---: | :----: | --- |
+| create (emulate) | `opus` | **high** | the gate catches content, but a poor spec burns the gate's scarce budget |
+| dev (emulate) | `opus` | **xhigh** | single pass, no retry net → strongest coding tier first try; **`max` on a `critical` lane** (tiering upward is the only safe direction) |
+| code-review / delta re-review | `opus` | **max** | the last adversarial net; it fights the dev's confirmation bias |
+| patch (load-bearing) / triage hotfix | `opus` | **xhigh** / **high** | subtle coding (rounding, FK, boundary); a hotfix is scoped, its review runs `opus`·max |
+| duplication-scout / merged-result sweep / S5 smoke | `sonnet` | **high** | bounded by observation fidelity + protocol, not reasoning depth — don't overthink the procedural |
 
 The lane's `tier` (from S1's card) does two concrete jobs at runtime: it **arms the anti-mis-tiering
 guard at the gate** (a `critical` lane whose spec reads thin gets sent back) and it **bumps
-`critical` lanes to `dev=max`**.
+`critical` lanes to `dev=opus·max`**.
 
 ---
 
@@ -90,7 +98,7 @@ function buildPrompt(l){ const wt = `${WT}/${l.key}`; return `Autonomous create 
 Return the schema; filesTouched MUST be exactly the one spec file; acHeadlines = the spec's AC one-liners.` }
 phase('Create')
 return { specs: (await parallel(LANES.map(l => () =>
-  agent(buildPrompt(l), { label:`create:${l.key}`, phase:'Create', schema:SCHEMA, effort:'high' })))).filter(Boolean) }
+  agent(buildPrompt(l), { label:`create:${l.key}`, phase:'Create', schema:SCHEMA, model:'opus', effort:'high' })))).filter(Boolean) }
 ```
 
 ---
@@ -184,7 +192,7 @@ function buildPrompt(l){ const wt = `${WT}/${l.key}`; return `Autonomous dev lan
 Return the schema (diffStat = git diff --stat <specCommit> HEAD).` }
 phase('Dev')
 return { devs: (await parallel(LANES.map(l => () =>
-  agent(buildPrompt(l), { label:`dev:${l.key}`, phase:'Dev', schema:SCHEMA, effort: l.tier === 'critical' ? 'max' : 'xhigh' })))).filter(Boolean) }
+  agent(buildPrompt(l), { label:`dev:${l.key}`, phase:'Dev', schema:SCHEMA, model:'opus', effort: l.tier === 'critical' ? 'max' : 'xhigh' })))).filter(Boolean) }
 ```
 
 ---
@@ -225,11 +233,12 @@ catch a parallelization defect the gates pass green. Per lane:
 
 The review skill fans out into parallel layers, so it **cannot** run inside a workflow — run it
 top-level: hand the human one prompt + worktree path per lane for **parallel terminals**, or run
-them yourself as **Agent calls** in the main loop. Effort **max**. Give each reviewer the **diff
+them yourself as **Agent calls** in the main loop (pass `model:'opus'` — the routing table
+applies to Agent calls too). **Opus-class, effort max.** Give each reviewer the **diff
 range**, the **spec** (including its preserved-behaviors Dev Notes — a removed behavior no test
 covered is a finding, not a cleanup), the four lenses (correctness / edge-cases / acceptance /
 **coherence**), the lane's invariants, and **authority to apply safe patches in the worktree +
-re-gate** (a load-bearing patch is xhigh).
+re-gate** (a load-bearing patch is opus·xhigh).
 
 **Neutralize the review skill's sequential-flow write-backs** — the same emulate-don't-invoke
 logic, applied to the review's side-effects. Bake into every reviewer prompt: the reviewer
@@ -293,14 +302,14 @@ components) may be rebased as a group and gated once.
 4. **`git merge --ff-only`**, then **§7 verify** the merged result. Verify `git show --stat` after
    each integration commit — a `git add a b deleted-path` aborts the whole stage and silently drops
    files; amend to fold in anything dropped.
-5. **Delta re-review — the merged content is not the reviewed content.** The effort-max review saw
+5. **Delta re-review — the merged content is not the reviewed content.** The opus·max review saw
    the pre-rebase worktree diff; everything that changed content after it escapes it. So: every
    **manual hotspot resolution** logged in step 2 (a keep-HEAD/keep-both call is semantics, and
    `tsc` proves syntax, not that the kept singleton still clears lane B's slice), and every
    **orchestrator-authored code commit** (the seam-fix-once, a shim deletion, dep glue), gets a
-   **targeted top-level `bmad-code-review` pass (effort max** — the last adversarial net applies
-   to the last content change too**)** with the diff + the resolution rationale, before the wave
-   closes. Record each pass in the run-record's *Delta re-review* row — an empty row must mean "no
+   **targeted top-level `bmad-code-review` pass (`model:'opus'`, effort max** — the last
+   adversarial net applies to the last content change too**)** with the diff + the resolution
+   rationale, before the wave closes. Record each pass in the run-record's *Delta re-review* row — an empty row must mean "no
    manual resolutions, no orchestrator code commits", never "skipped".
 6. **Junction-safe teardown.** Remove the **junction LINK only** (`[System.IO.Directory]::Delete(link, $false)`
    / `cmd /c rmdir` on Windows; on POSIX the symlink itself — `rm <wt>/node_modules`, never `rm -rf`
@@ -335,7 +344,8 @@ lane could see. The critic's context has deliberately never read a lane's code (
 and diffStats only), so **suspicion cannot come from vibes — delegate the detection, keep the
 verdict**:
 
-- **Cross-lane duplications — run the duplication-scout.** Spawn a fresh agent (effort high) on the
+- **Cross-lane duplications — run the duplication-scout.** Spawn a fresh agent (`model:'sonnet'`,
+  effort high — enumeration and clustering, not judgement; the verdict stays yours) on the
   wave's merged range (`git diff <baseline_main_head>..<final_main_head>`), instructed to:
   **(a)** enumerate every NEW exported symbol (name · path · one-line semantics); **(b)** cluster
   near-duplicates by name/signature/semantics against BOTH the wave's other new exports AND the
@@ -372,7 +382,8 @@ The gate follows the wave's **content, not its tag** — a mixed wave (engines +
 
 - **Any engine/computation lane in the wave** → **jest + the empirical sweep of the MERGED result**
   (the playbook names the range and the runner). The sweep is **executed, never narrated** —
-  delegate it to a fresh agent (effort high) with a pinned StructuredOutput:
+  delegate it to a fresh agent (`model:'sonnet'`, effort high — execution + observation, per the
+  routing table) with a pinned StructuredOutput:
   `{ range, pointsExecuted, expectationSource, mismatches:[{input,expected,observed}], outputTail, evidencePath }`,
   run on **merged main after integration** (per-lane review sweeps ran in isolated worktrees and
   cannot see the composition). PASS iff the named range is covered (endpoints + the playbook's
@@ -380,10 +391,11 @@ The gate follows the wave's **content, not its tag** — a mixed wave (engines +
   and `mismatches` is empty. Paste the real `outputTail` into the run-record — **a sweep with no
   captured execution output did not happen** (the RED-proof rule, A3). A green unit suite alone is
   not the gate.
-- **Anything renders** → **delegate to `pwo-ui-smoke` (S5)**. Pass it exactly the wave's **smoke
-  criterion** from the playbook — the **journey** (ordered steps), the **reference mockup(s)**, and
-  the **expected live figures** — plus the runtime state (the emulator/browser is already up; S5 is
-  a *consumer* of running infra, never an owner). **Trust S5's StructuredOutput verdict**
+- **Anything renders** → **delegate to `pwo-ui-smoke` (S5)** at `model:'sonnet'`, effort high (S5
+  itself says reliability comes from its capture-and-compare protocol, not reasoning depth). Pass
+  it exactly the wave's **smoke criterion** from the playbook — the **journey** (ordered steps),
+  the **reference mockup(s)**, and the **expected live figures** — plus the runtime state (the
+  emulator/browser is already up; S5 is a *consumer* of running infra, never an owner). **Trust S5's StructuredOutput verdict**
   (`PASS | FAIL | BLOCKED`, with per-screen `deltas` and per-figure `match`) **without re-driving
   the app or re-reading its screenshots** — S5 owns that contract; do not re-define it. **But
   validate its envelope before accepting a PASS**: a screen-wave PASS counts **only** with
@@ -405,8 +417,9 @@ so triage is repair-on-main, never a lane-rollback reflex, and never an improvis
 hotfix. Classify each delta / figure-mismatch / crash:
 
 - **Trivial + targeted** (a single-screen delta, a one-line figure fix, self-contained) →
-  delegate a hotfix to a fresh agent, **code-review the patch top-level (effort max)**, re-gate,
-  **re-smoke via S5** — bounded at ~2 hotfix+re-smoke cycles, then escalate to the human.
+  delegate a hotfix to a fresh agent (`model:'opus'`, effort high), **code-review the patch
+  top-level (opus·max)**, re-gate, **re-smoke via S5** — bounded at ~2 hotfix+re-smoke cycles,
+  then escalate to the human.
 - **Non-trivial / cross-cutting** → escalate to the human with the explicit options:
   **revert the offending lane** (a `chore(orchestration)` revert commit — forward-only, never
   rewrite history) · **repair as a lane in the next wave** (add it to the handoff's lane list,

@@ -31,8 +31,10 @@ And the standing priorities, which never bend: **the orchestrator is the only wr
 state file** (`sprint-status`) — lanes never touch it; **verify from the source of truth, never
 the self-report** — re-check every lane with real git (self-reports matched real git 100% and the
 re-check is still mandatory); **stay a thin orchestrator** — bring back a StructuredOutput, never
-a transcript or a 500-line diff; **main green > speed > cost** — route effort *upward* (token
-economy is not a goal).
+a transcript or a 500-line diff; **main green > speed > cost** — route effort *upward*, and route
+the **model** deliberately: you choose model AND effort for every delegation (the model × effort
+table in the reference); the session's top-tier model is reserved for **your own** judgement and
+lands on a sub-agent only on explicit user request.
 
 ## Resolution rules
 
@@ -72,7 +74,7 @@ run-record and reconcile it against real git, never a remembered state. Talk to 
 ## The pipeline — run it in order, keep the run-record
 
 The steps below, in order; each feeds the next. The **recipe** for every step — the WF1/WF2 script
-skeletons + StructuredOutput schemas + the leak-guard/footprint-only parade, the **effort table**,
+skeletons + StructuredOutput schemas + the leak-guard/footprint-only parade, the **model × effort table**,
 the gate fact-extraction recipe, the §7 real-git checklist, the serial-integration + junction-safe
 teardown order, the critic checklist — lives in **`references/wave-pipeline.md`**; read the section
 for the step you run. Record each step into the artifact from `assets/wave-run-record-template.md`
@@ -87,7 +89,7 @@ full body of every UPDATE file in the footprint → a preserved-behaviors Dev No
 2+: a merged prior spec works as the format reference) — directly to its absolute worktree path
 with the card's **⚙ constraint baked verbatim**, commit **spec-only**, run the **report-only**
 leak-guard (a lane never writes, cleans, or deletes anything in the main repo — it reports and the
-orchestrator triages). Effort **high**.
+orchestrator triages). **Opus-class, effort high.**
 
 ### GATE — the fact-extraction pre-pass (you; load-bearing, irreplaceable)
 
@@ -114,8 +116,9 @@ junction**), **emulates dev-story** directly to absolute worktree paths — **re
 (write the failing test first; implement nothing unmapped to a spec Task) — gates **in the
 worktree** (never green by weakening an assertion or re-implementing a missing parent symbol:
 that returns red with the reason — the DAG may be wrong, and that is the orchestrator's call),
-commits **footprint-only**, runs the **report-only** leak-guard. **Route effort upward**: dev =
-**xhigh**, **`max` on a `critical` lane** (the tier comes from S1's card). **Robustness:** bounded
+commits **footprint-only**, runs the **report-only** leak-guard. **Route model and effort**: dev =
+**opus·xhigh**, **opus·max on a `critical` lane** (the tier comes from S1's card; the top-tier
+session model never runs a lane absent explicit user request). **Robustness:** bounded
 retry on a red gate; `resumeFromRunId` if a lane dies, to protect the xhigh/max investment.
 
 ### Verify with real git (you)
@@ -132,14 +135,14 @@ playbook's allocation table; append-only registry blocks), **registry-merge inte
 
 ### Code-review — TOP-LEVEL only
 
-Run `bmad-code-review` top-level (Fact 1) at effort **max**, one pass per lane, with the diff range
+Run `bmad-code-review` top-level (Fact 1) at **opus·max**, one pass per lane, with the diff range
 + spec (incl. preserved-behaviors) + invariants, and its **write-backs neutralized** (the reviewer
 writes nothing under the main repo; defer-findings return in the StructuredOutput; patches commit
 on the lane branch; no lane integrates with an open finding). **Sweep the realistic input range**
 for numeric/format code; verify any **mandatory side-effecting policy** (throttle/retry/auth) is
 exercised with its stub **off**; carry the **FK blind-spot**; check **coherence** with the
 project's conventions (the fourth lens). Apply safe patches **in the worktree + re-gate**; a
-load-bearing patch is **xhigh**.
+load-bearing patch is **opus·xhigh**.
 
 ### Serial integration (you; incompressible)
 
@@ -160,9 +163,9 @@ dependency** install (verify the real export surface), the **deferred-work ledge
 ### End-of-wave critic (you; internal step)
 
 A proactive pass over the merged wave for what isolation hides — detection delegated (the
-**duplication-scout** over the wave's merged diff: new exported symbols clustered against the
-wave's other exports AND pre-existing main; duplicated fixtures; contradictory seeds), verdict
-kept: **cross-lane duplications**, **mocked-away policies**, **forward-seams that moved**,
+**duplication-scout**, sonnet·high, over the wave's merged diff: new exported symbols clustered
+against the wave's other exports AND pre-existing main; duplicated fixtures; contradictory
+seeds), verdict kept: **cross-lane duplications**, **mocked-away policies**, **forward-seams that moved**,
 **cross-lane idiom divergence**. Fix trivial now (delegate any non-trivial change to a **fresh
 agent** — stay thin); flag a cross-cutting one for the closeout consolidation (S4) as a `DW-`
 ledger entry.
@@ -170,12 +173,13 @@ ledger entry.
 ### End-of-wave smoke
 
 The gate follows the wave's **content**: **anything renders** → delegate to **`pwo-ui-smoke`
-(S5)**: pass it exactly the wave's **smoke criterion** (journey + reference mockup(s) + expected
-live figures) and **trust its StructuredOutput verdict** (PASS/FAIL/BLOCKED + deltas + figures)
-**without re-driving the app** — but **validate its envelope** (PASS counts only with
-`harness ≠ none`, `uiBlindSpotCovered:true`, evidence present, every asserted screen visited; else
-treat as BLOCKED). **Any engine lane** → **jest + the empirical sweep of the merged result**,
-executed by a delegated agent with captured output — never narrated. A mixed wave runs **both**.
+(S5)** at sonnet·high: pass it exactly the wave's **smoke criterion** (journey + reference
+mockup(s) + expected live figures) and **trust its StructuredOutput verdict** (PASS/FAIL/BLOCKED
++ deltas + figures) **without re-driving the app** — but **validate its envelope** (PASS counts
+only with `harness ≠ none`, `uiBlindSpotCovered:true`, evidence present, every asserted screen
+visited; else treat as BLOCKED). **Any engine lane** → **jest + the empirical sweep of the merged
+result**, executed by a delegated agent (sonnet·high) with captured output — never narrated. A
+mixed wave runs **both**.
 Record the verdict; a FAIL/BLOCKED routes to **Smoke triage** (`references/wave-pipeline.md`
 § *Smoke triage*), not the handoff.
 

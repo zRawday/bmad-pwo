@@ -19,7 +19,7 @@
       "name": "pwo",
       "source": "./",
       "description": "Orchestrate the parallel implementation of a BMad backlog in isolated waves (git worktrees), keeping the main branch always green and conflict-free.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": {
         "name": "zRawday"
       },

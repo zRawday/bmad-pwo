@@ -117,8 +117,10 @@ deltas, every asserted figure `match:true`, **and every screen the journey asser
 you could not finish is a **FAIL** (or **BLOCKED** if the harness died mid-run), never a PASS on
 the screens you did reach. Otherwise **FAIL** (cosmetic-only deltas still PASS but are reported).
 **BLOCKED** iff the harness could not be brought up or reached (`harness ≠ none` — a configured
-harness never degrades to `none`); say why in `notes`. Effort `high` suffices — reliability comes
-from the capture-and-compare protocol above, not from deeper reasoning.
+harness never degrades to `none`); say why in `notes`. Effort `high` suffices — and a mid-tier
+model (`model:'sonnet'`) suffices for the same reason: reliability comes from the
+capture-and-compare protocol above, not from deeper reasoning. Callers delegate S5 at
+sonnet·high by default.
 
 ## Degrade when there is no UI harness
 

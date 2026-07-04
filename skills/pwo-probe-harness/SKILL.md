@@ -50,6 +50,9 @@ of this skill is the Workflow opt-in.
 Every probe prompt carries the catalog's non-negotiable verbatim in spirit — *report what you
 observe by executing; never guess; a determination without captured evidence is `broken`, not a
 guess* — and forces the shared StructuredOutput schema so the return is machine-checkable.
+Probes run `model:'sonnet'` — execution + observation, not reasoning depth; confidence comes from
+the ×2-copy agreement, not the model tier (never route a probe to the top-tier session model; if
+a named tier is unavailable, fall back to the nearest tier at or below).
 
 The fan-out shape (author the FACTS array and the prompts from the catalog; do not invent a
 different schema):
@@ -75,7 +78,7 @@ verdict per this rubric: ${f.rubric}`
 phase('Probe')
 const runs = (await parallel(FACTS.flatMap(f =>
   Array.from({length: COPIES}, (_, c) => () =>
-    agent(probePrompt(f, c+1), { label:`probe:${f.id}.${c+1}`, phase:'Probe', schema:SCHEMA, effort:'high' }))
+    agent(probePrompt(f, c+1), { label:`probe:${f.id}.${c+1}`, phase:'Probe', schema:SCHEMA, model:'sonnet', effort:'high' }))
 ))).filter(Boolean)
 return { runs }   // COPIES × FACTS verdict objects
 ```

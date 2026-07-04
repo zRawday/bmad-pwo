@@ -91,7 +91,10 @@ the false-edge/hidden-edge rubric, and the hotspot taxonomy. Run it as a **Workf
 invocation of this skill is the opt-in), mirroring S0's discipline: every subagent is forced to
 the schema and to **ground truth — cite the real producing symbol, never guess; an edge with no
 producing-symbol is a false-edge candidate, a consumed symbol with no on-DAG producer is a hidden
-edge**.
+edge**. **Route the model explicitly**: analysis agents run `model:'opus'` (the strongest coding
+tier — they read real code and render verdicts the whole plan keys off), never the top-tier
+session model (that tier is reserved for *your* fold, cut, and gate — a sub-agent gets it only on
+explicit user request); if a named tier is unavailable, fall back to the nearest tier at or below.
 
 The shape (author the SUBSYSTEMS + prompts from the reference; a barrier sits between discovery
 and verification because hidden-edge hunting needs the global symbol map):
@@ -101,15 +104,15 @@ export const meta = { name:'pwo-dep-analysis', description:'Adversarial blocked-
 const SUBSYSTEMS = [ /* one per epic/layer/folder owner, authored from the reference */ ]
 // Stage 1 (parallel): each subsystem proposes blocked-by edges (with producing-symbol EVIDENCE) + footprint + hotspots.
 const found = (await parallel(SUBSYSTEMS.map(s => () =>
-  agent(discoverPrompt(s), { label:`discover:${s.id}`, phase:'Discover', schema:EDGE_SCHEMA, effort:'high' })))).filter(Boolean)
+  agent(discoverPrompt(s), { label:`discover:${s.id}`, phase:'Discover', schema:EDGE_SCHEMA, model:'opus', effort:'high' })))).filter(Boolean)
 const graph = assembleGraph(found)   // BARRIER, plain code: global symbol map + dedup + CYCLE DETECTION (hidden-edge hunting needs the whole map)
 // Stage 2 (parallel): refute each edge (false? dissolvable by a hoisted stub?) + one COVERAGE verifier
 // per story (mandatory for zero-edge stories) hunting the edges nobody proposed, against the global map.
 const verified = (await parallel([
   ...graph.edges.map(e => () =>
-    agent(refutePrompt(e, graph), { label:`refute:${e.child}<-${e.parent}`, phase:'Verify', schema:VERDICT_SCHEMA, effort:'high' })),
+    agent(refutePrompt(e, graph), { label:`refute:${e.child}<-${e.parent}`, phase:'Verify', schema:VERDICT_SCHEMA, model:'opus', effort:'high' })),
   ...graph.stories.map(s => () =>
-    agent(coveragePrompt(s, graph), { label:`cover:${s.key}`, phase:'Verify', schema:COVERAGE_SCHEMA, effort:'high' })),
+    agent(coveragePrompt(s, graph), { label:`cover:${s.key}`, phase:'Verify', schema:COVERAGE_SCHEMA, model:'opus', effort:'high' })),
 ])).filter(Boolean)
 return { graph, verified }
 ```

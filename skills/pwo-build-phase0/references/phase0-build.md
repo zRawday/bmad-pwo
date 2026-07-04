@@ -29,8 +29,11 @@ const SCHEMA = { type:'object', additionalProperties:false, properties:{
 
 The sub-agent prompt carries: the item's footprint, the recipe below verbatim-in-spirit, "**touch
 only your footprint; do not edit the coordination/state file**", and "run the gate in the repo and
-return its real tail — do not summarize it." Effort: **xhigh** for the guard and the FK-ordered
-seams (subtle, load-bearing); **high** for the test-ids split and the mechanical items. After it
+return its real tail — do not summarize it." Route model AND effort per item: **`model:'opus',
+effort:'xhigh'`** for the guard, the FK-ordered seams, and the shared money helpers (subtle,
+load-bearing); **`model:'sonnet', effort:'high'`** for the test-ids split and the mechanical
+items. The session's top-tier model is reserved for the orchestrator's own verification — it
+never runs a dev sub-agent absent explicit user request. After the sub-agent
 returns, the orchestrator verifies the diff with real git (`git diff --stat`, `git status`), re-runs
 the gate itself if the stakes warrant, then makes a small footprint-clear commit. **Never `git add
 -A`** — stage exactly the item's files (the method's footprint-only discipline applies on main too).

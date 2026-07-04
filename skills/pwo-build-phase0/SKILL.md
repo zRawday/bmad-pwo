@@ -70,9 +70,10 @@ the reason; do not invent infra the project does not need.
 
 Work through the spec's items. `references/phase0-build.md` carries the concrete recipe for each
 — read the entry for the item you are building. **Delegate the bulky coding** to a dev sub-agent
-that returns a StructuredOutput (what it built, files touched, gate result), routing effort
-*upward* on the load-bearing ones (the guard, the FK-ordered seams → high/xhigh; the mechanical
-workspace/`.gitattributes` → high); or write the smaller items inline. If dev sub-agents are
+that returns a StructuredOutput (what it built, files touched, gate result), routing model AND
+effort per item (the guard, the FK-ordered seams, the shared helpers → opus·xhigh; the test-ids
+split and the mechanical workspace/`.gitattributes` → sonnet·high; never the top-tier session
+model on a sub-agent); or write the smaller items inline. If dev sub-agents are
 unavailable, the orchestrator builds the bulky items inline too — only throughput changes, never
 the discipline. Whoever codes, **the orchestrator keeps the judgement**: after each item, verify
 the diff against real git (footprint only, no stray coordination-file edit), run the gate, and
@@ -157,9 +158,10 @@ headless mode (the JSON tail carries `mainHead` + `guardProvenRed` + `unionPolic
 union policy {proven to bind | n-a} (receipt: {output_folder}/pwo/phase-0-receipt.md, overall: ready). Run Wave 1 end-to-end keeping main
 green, in THIS fresh session. This wave's lanes + their ⚙ anti-collision constraints (VERBATIM) are in
 the playbook ({output_folder}/pwo/playbook.md): {list each lane: key (tier) · ⚙ "constraint"}. Pipeline:
-WF1 create (emulate) → GATE → WF2 dev (emulate; dev=xhigh, critical=max) → verify real git → code-review
-TOP-LEVEL (effort max) → serial integration → end-of-wave critic → smoke → Field Note + next-wave
-handoff. Read the playbook + Phase 0 receipt first, propose the dispatch plan, and get my GO before WF1.
+WF1 create (emulate; opus·high) → GATE → WF2 dev (emulate; dev=opus·xhigh, critical=opus·max) → verify
+real git → code-review TOP-LEVEL (opus·max) → serial integration → end-of-wave critic → smoke → Field
+Note + next-wave handoff. Read the playbook + Phase 0 receipt first, propose the dispatch plan, and get
+my GO before WF1.
 ```
 
 ## Headless output

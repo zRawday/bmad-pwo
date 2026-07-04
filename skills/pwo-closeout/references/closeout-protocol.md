@@ -14,8 +14,11 @@ two records you keep live at `OUT/closeout-record.md` (from `assets/closeout-rec
 are a **thin orchestrator** — delegate every bulky thing (driving the emulator, a refactor, reading a
 big diff) to a fresh agent and bring back a StructuredOutput, never a transcript; **verify from real
 git / real output**, never the self-report; you are the **only writer** to `MAIN` and to the state
-file. Closeout is where it is most tempting to "just do it inline" — resist; the orchestrator context
-is a budget here too.
+file; and you **route model AND effort per delegation** — consolidation dev at opus·xhigh, its
+adversarial review at opus·max, scouts/smokes at sonnet·high; the top-tier session model is
+reserved for your own judgement (a sub-agent gets it only on explicit user request). Closeout is
+where it is most tempting to "just do it inline" — resist; the orchestrator context is a budget
+here too.
 
 ---
 
@@ -55,7 +58,8 @@ up, S5 returns `BLOCKED` — that is the owner's to fix, not a FAIL.
 
 ### 3. Delegate each journey to S5 and trust its verdict
 
-Call **`pwo-ui-smoke` (S5)** once per journey, passing it the smoke criterion above + the runtime
+Call **`pwo-ui-smoke` (S5)** once per journey (delegate at sonnet·high — S5's reliability comes
+from its protocol, not reasoning depth), passing it the smoke criterion above + the runtime
 state. **Do not re-drive the app and do not re-read its screenshots** — S5 owns the capture-and-compare
 contract and returns a compact StructuredOutput verdict; you consume it. The fields you read back (S5's
 schema — consume it, don't re-declare it):
@@ -81,7 +85,7 @@ Each non-PASS verdict produces work. Triage every delta/crash/figure-mismatch **
 
 | Finding | Route |
 | ------- | ----- |
-| **Trivial + targeted** (a single-screen cosmetic/major delta or a one-line figure fix, self-contained) | **Delegate a hotfix to a fresh agent** (paste-ready prompt: the delta, the file, the expected, "report a StructuredOutput") → **re-smoke that journey** via S5 to confirm. |
+| **Trivial + targeted** (a single-screen cosmetic/major delta or a one-line figure fix, self-contained) | **Delegate a hotfix to a fresh agent** (opus·high; paste-ready prompt: the delta, the file, the expected, "report a StructuredOutput") → **re-smoke that journey** via S5 to confirm. |
 | **Non-trivial OR cross-cutting** (a regression spanning epics, a shared-helper bug, an FK/delete-path issue, anything touching code several lanes share) | **Into the consolidation wave (§B)** — it is exactly the holistic, sequential work B exists for. Do **not** hotfix it in isolation. |
 | **Non-blocking** (a known limitation, a future-year/data gap, a cosmetic nicety) | **`deferred-work` / post-v1** — log it with the reason; it is not a closeout blocker. |
 
@@ -111,9 +115,10 @@ is forgotten by construction if you don't read it back), and the triage spillove
 Assemble **mechanically**: enumerate every run-record's "Flagged for S4" table + the ledger's
 `DW-` ids + the playbook section, and reconcile the counts — an item in a run-record with no
 ledger entry (or vice versa) is a bookkeeping gap to resolve *before* the consolidation starts.
-Then run **one independent whole-repo duplication sweep** (the S3 duplication-scout recipe, scoped
-to the whole build's range `first-baseline..HEAD`) so the work list does not depend solely on
-per-wave critic flags — a duplication every single critic missed is still payable now.
+Then run **one independent whole-repo duplication sweep** (the S3 duplication-scout recipe,
+sonnet·high, scoped to the whole build's range `first-baseline..HEAD`) so the work list does not
+depend solely on per-wave critic flags — a duplication every single critic missed is still
+payable now.
 
 - **(1) Incurred debt — what isolation *created*** (subi):
   - **Cross-lane duplications.** N lanes that independently re-implemented one
@@ -139,11 +144,12 @@ per-wave critic flags — a duplication every single critic missed is still paya
 
 One item at a time (or very low width on genuinely disjoint items — but default to sequential). Per item:
 
-1. **Careful dev — delegate to a fresh agent** (paste-ready, self-contained prompt: the consolidation
-   target, the duplicated sites to unify, the invariant to preserve, "add a permanent parity/regression
-   test", "report a StructuredOutput"). Keep the orchestrator thin — you don't type the refactor. The
-   dev works on `MAIN` directly or on a short-lived branch you ff-merge; there is **no worktree fan-out**.
-2. **Adversarial review — top-level** (reuse `bmad-code-review`, effort `max`; it fans out, so it runs
+1. **Careful dev — delegate to a fresh agent** (opus·xhigh; paste-ready, self-contained prompt: the
+   consolidation target, the duplicated sites to unify, the invariant to preserve, "add a permanent
+   parity/regression test", "report a StructuredOutput"). Keep the orchestrator thin — you don't type
+   the refactor. The dev works on `MAIN` directly or on a short-lived branch you ff-merge; there is
+   **no worktree fan-out**.
+2. **Adversarial review — top-level** (reuse `bmad-code-review`, opus·`max`; it fans out, so it runs
    top-level, never nested — same Fact-1 constraint as S3; same write-back neutralization: findings
    return in the StructuredOutput, nothing written outside the item's footprint). Same lenses: sweep
    don't spot-check; "is the policy tested, or mocked away?"; prove FK/delete order, not just

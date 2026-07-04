@@ -27,9 +27,9 @@ overall: {integrated | triaged | blocked | pending-human}   # integrated only wh
 
 ## Lanes (this wave)
 
-| Lane | Tier | Spec commit | Gate amendment | Feat commit | Effort (dev) | Review | Footprint ✓ | Integrated |
-| ---- | ---- | ----------- | -------------- | ----------- | :----------: | ------ | :---------: | :--------: |
-| {key} | {trivial/standard/critical} | {sha} | {none / a one-line summary} | {sha} | {xhigh / max} | {PASS / patched / escalated} | {✓} | {✓ ff @ sha} |
+| Lane | Tier | Spec commit | Gate amendment | Feat commit | Model·effort (dev) | Review | Footprint ✓ | Integrated |
+| ---- | ---- | ----------- | -------------- | ----------- | :----------------: | ------ | :---------: | :--------: |
+| {key} | {trivial/standard/critical} | {sha} | {none / a one-line summary} | {sha} | {opus·xhigh / opus·max} | {PASS / patched / escalated} | {✓} | {✓ ff @ sha} |
 
 ## Gate amendments (authoritative overrides baked into the in-worktree specs)
 
@@ -132,9 +132,10 @@ THIS WAVE — Wave {m} ({type: foundation | screen | mixed}, {k} lanes):
   amendment OVERRIDE it where they conflict): {≤10 lines — established idioms / mistakes not to repeat}.
 - Accepted debt carried forward: {DW-ids + one-liners · none}.
 
-PIPELINE (do not skip a step): WF1 create (emulate) → GATE (read the real seam bodies, re-validate
-FK ordering, cross-check load-bearing values, anti-mis-tier, bake any ⚙ gate amendment) → WF2 dev
-(emulate; dev=xhigh, critical=max) → verify real git (§7) → code-review TOP-LEVEL (effort max;
+PIPELINE (do not skip a step): WF1 create (emulate; opus·high) → GATE (read the real seam bodies,
+re-validate FK ordering, cross-check load-bearing values, anti-mis-tier, bake any ⚙ gate amendment)
+→ WF2 dev (emulate; dev=opus·xhigh, critical=opus·max — never the top-tier session model on a
+sub-agent absent explicit user request) → verify real git (§7) → code-review TOP-LEVEL (opus·max;
 sweep-don't-spot-check; "policy tested or mocked away?"; FK blind-spot; coherence) → serial
 integration (rebase → resolve hotspots by hand → re-gate after EVERY rebase incl. "clean" +
 un-skip any filled seam's contract test → ff-only → §7-verify merged → DELTA RE-REVIEW of every
